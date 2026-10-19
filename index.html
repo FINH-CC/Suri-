@@ -1893,7 +1893,13 @@ function placeContact(){_cb.makeEmpty();PARTS.forEach(p=>{if(p.id!=='mount')_cb.
 /* =================== LOOP =================== */
 let capLift=false,lift=0;
 let syncT=0;
+// one bad frame must never stop the loop (that is what froze the page when a part failed to draw)
+let frameErrs=0;
 function frame(){
+  requestAnimationFrame(frame);
+  try{frameBody()}catch(e){if(frameErrs++<3)console.error('[suri] frame',e)}
+}
+function frameBody(){
   const nowS=performance.now();
   if(nowS-syncT>400){syncT=nowS;PARTS.forEach(p=>{if(builtKey[p.id]!==undefined&&builtKey[p.id]!==partKey(p.id)){rebuild(p.id);rebuildStickers()}})}
   const tgt=capLift&&!exploded?3.2:0;lift=reduceMotion?tgt:lift+(tgt-lift)*.12;
@@ -1913,7 +1919,6 @@ function frame(){
   if(camTo){camera.position.lerp(camTo,reduceMotion?1:.1);if(camera.position.distanceTo(camTo)<.05)camTo=null}
   controls.update();placeContact();
   if(drawing)renderDrawing();else renderReal();
-  requestAnimationFrame(frame);
 }
 
 /* =================== INIT =================== */
