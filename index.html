@@ -437,7 +437,12 @@ section.part.colour-only .swatch-row{margin-bottom:0}
     <p class="season">Season 01</p>
   </div>
 </div>
-<script>document.documentElement.classList.add('intro-on')</script>
+<script>document.documentElement.classList.add('intro-on');
+(function(){var done=false;function bail(){if(done)return;var i=document.getElementById('intro');if(!i||i.classList.contains('out')){done=true;return}done=true;i.classList.add('out');document.documentElement.classList.remove('intro-on');setTimeout(function(){i.remove()},1000)}
+window.__introBail=bail;
+document.addEventListener('DOMContentLoaded',function(){setTimeout(bail,7000)});
+window.addEventListener('error',function(e){console.error('[suri] init error',e.message);setTimeout(bail,400)});
+window.addEventListener('unhandledrejection',function(e){console.error('[suri] init rejection',e.reason);setTimeout(bail,400)});})();</script>
 <a class="skip" href="#info">Skip to options</a>
 <header class="topbar">
   <nav class="nav" aria-label="Main"><a href="https://www.trysuri.com/">Shop</a><a href="https://www.trysuri.com/">Learn</a><a href="https://www.trysuri.com/">Impact</a></nav>
@@ -973,6 +978,7 @@ const B={
       const mm=new THREE.Matrix4(),q=new THREE.Quaternion(),Z=new THREE.Vector3(0,0,1),sc=new THREE.Vector3(1,1,.8);let i=0;
       for(let row=0;row<rowsN;row++)for(let k=0;k<perRow;k++){const a=-Math.PI+(k+(row%2)*.5)*Math.PI*2/perRow,y=y0+.42+row*((y1-y0-.84)/(rowsN-1)),r=rTheta(y,a)+T+belly(y)+.01;
         const n=new THREE.Vector3(Math.sin(a),0,Math.cos(a));q.setFromUnitVectors(Z,n);mm.compose(new THREE.Vector3(r*Math.sin(a),y,r*Math.cos(a)),q,sc);im.setMatrixAt(i++,mm)}
+      const wc=new THREE.Color(1,1,1);for(let j=0;j<im.count;j++)im.setColorAt(j,wc); // keep an instanceColor like the tufts so shared shader programs always find it
       g.add(im)}
     if(s==='rings')RINGS.forEach(y=>{ // a fine accent line set into each raised band
       const tg=new THREE.TorusGeometry(1,.024,10,128);tg.rotateX(Math.PI/2);const t=new THREE.Mesh(tg,accent);
@@ -1914,6 +1920,7 @@ function frame(){
 const introStart=performance.now();
 document.getElementById('loader-text').textContent=restoring?'Restoring your design…':'Loading the full-resolution CAD…';
 requestAnimationFrame(()=>setTimeout(async()=>{
+ try{
   await preloadCAD();
   PARTS.forEach(p=>rebuild(p.id));
   PARTS.forEach(p=>renderPartSection(p.id));
@@ -1925,8 +1932,10 @@ requestAnimationFrame(()=>setTimeout(async()=>{
   document.getElementById('banner-art').innerHTML=['pip','nova','splash'].map(k=>`<img src="${charThumbs[k]}" alt="">`).join('');updateContinue(state.character);precompile();
   frameDefault();
   frame();
+ }catch(err){console.error('[suri] init failed',err)}
+ finally{
   document.getElementById('loader').classList.add('done');
-  revealPage();
+  revealPage();}
 },30));
 function revealPage(){
   const intro=document.getElementById('intro');if(!intro)return;
