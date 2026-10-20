@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "e2e": "playwright test",
-    "legacy": "vite preview --outDir legacy --port 3241"
+    "legacy": "vite preview --outDir legacy --port 3241",
+    "capture-reference": "tsx scripts/capture-reference.ts"
   },
   "devDependencies": {
     "@gltf-transform/core": "^4.5.1",
