@@ -1,0 +1,12 @@
+/* ---------- header ---------- */
+.topbar{position:sticky;top:0;z-index:30;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:14px 20px;
+  background:var(--bg);padding-top:calc(14px + env(safe-area-inset-top,0px))}
+.nav{display:flex;gap:44px;font-size:16px;font-weight:var(--xl)}
+.nav a{text-decoration:none}
+.nav a:hover{color:var(--muted)}
+.wordmark{display:block;text-decoration:none;line-height:0}
+.wordmark img{display:block;height:22px;width:auto}
+.top-actions{display:flex;justify-content:flex-end;gap:6px}
+.icon-btn{display:flex;align-items:center;gap:8px;background:none;border:0;cursor:pointer;padding:8px 10px;font-size:14px;font-weight:var(--reg);border-radius:var(--pill)}
+.icon-btn:hover{background:var(--tile)}
+.icon-btn svg{width:22px;height:22px}

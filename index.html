@@ -1,7 +1,121 @@
-<!doctype html><html><head><meta charset="utf-8"><title>SURI Kids Lab</title>
-<style>html,body{margin:0;height:100%;background:#e8e4de}#stage{position:fixed;inset:0;background:#e8e4de}
-.toolbar{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:8px}
-.toolbar button{font:14px system-ui;padding:8px 12px;border-radius:999px;border:0;background:#fff;cursor:pointer}</style>
-</head><body><div id="stage"><div class="toolbar">
-<button id="tb-apart">Take apart</button><button data-view="0">Front</button><button data-view="1">Side</button><button data-view="2">Back</button><button data-view="3">Iso</button>
-</div></div><script type="module" src="/src/main.ts"></script></body></html>
+<!doctype html>
+<html lang="en" class="intro-on">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SURI Kids lab · Brush</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="intro" id="intro" role="status" aria-live="polite">
+  <div class="intro-inner">
+    <h2 aria-label="Meet the SURI Lab"><span class="w">Meet</span> <span class="w">the</span> <span class="w">SURI</span> <span class="w lab">Lab</span></h2>
+    <p class="season">Season 01</p>
+    <div class="intro-bar"><i></i></div>
+  </div>
+</div>
+<a class="skip" href="#info">Skip to options</a>
+<header class="topbar">
+  <nav class="nav" aria-label="Main"><a href="https://www.trysuri.com/">Shop</a><a href="https://www.trysuri.com/">Learn</a><a href="https://www.trysuri.com/">Impact</a></nav>
+  <a class="wordmark" href="https://www.trysuri.com/" aria-label="SURI home"><img src="/suri-wordmark.png" alt="SURI" width="640" height="106"></a>
+  <div class="top-actions">
+    <button class="icon-btn" id="open-designs" type="button" aria-label="My designs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>My designs</span></button>
+    <button class="icon-btn" id="share" type="button" aria-label="Share your design"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v7h14v-7"/></svg><span>Share</span></button>
+  </div>
+</header>
+
+<main class="pdp">
+  <div class="media">
+    <section class="stage" id="stage" aria-label="3D view of your brush">
+      <button class="undo" id="undo" type="button" aria-label="Undo last change" title="Undo (Ctrl/Cmd+Z)" disabled><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4L2.5 7.5 6 11"/><path d="M3 7.5h7.5a4.5 4.5 0 010 9H8"/></svg></button>
+      <button class="undo redo" id="redo" type="button" aria-label="Redo" title="Redo (Ctrl/Cmd+Shift+Z)" disabled><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><g transform="matrix(-1 0 0 1 18 0)"><path d="M6 4L2.5 7.5 6 11"/><path d="M3 7.5h7.5a4.5 4.5 0 010 9H8"/></g></svg></button>
+      <p class="placing-hint" id="placing-hint"></p>
+      <div class="toolbar" role="toolbar" aria-label="View controls">
+        <button class="tb-main" id="tb-apart" type="button" aria-pressed="false">Take apart</button>
+        <div class="seg" role="group" aria-label="Camera view" id="tb-views"><button type="button" data-view="0" aria-pressed="false">Front</button><button type="button" data-view="1" aria-pressed="false">Side</button><button type="button" data-view="2" aria-pressed="false">Back</button><button type="button" data-view="3" aria-pressed="false">Iso</button></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="info" id="info">
+    <h1>SURI Kids Electric Toothbrush</h1>
+    <p class="tagline">A brush they build themselves</p>
+    <ul class="features">
+      <li><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M5 13.5l5 5L21 7"/></svg>Six parts that click together</li>
+      <li><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M4 9h7V5a2 2 0 014 0v4h7v6h-3a2 2 0 000 4h3v4H4v-4h3a2 2 0 000-4H4z"/></svg>Swap the head, grip and cap as they grow</li>
+      <li><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="8" y="3" width="10" height="20" rx="5"/><path d="M13 8v6"/></svg>Mirror mount keeps it within reach</li>
+      <li><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M5 21c0-9 6-15 16-16-1 10-7 16-16 16zM5 21l8-8"/></svg>Built on the SURI handle and head</li>
+    </ul>
+
+    <nav class="steps" id="steps" aria-label="Steps"></nav>
+
+    <section class="step" id="step-1" aria-labelledby="st1">
+      <h2 class="step-title" id="st1">Pick a character to start from</h2>
+      <p class="sub">Ready-made friends from Season 01.</p>
+      <div class="chars" id="chars"></div>
+    </section>
+
+    <section class="step" id="step-2" aria-labelledby="st2" hidden>
+      <h2 class="step-title" id="st2">Swap the parts</h2>
+      <p class="sub">Caps, heads, grips and mounts. Tap any part of the brush to jump to it.</p>
+      <section class="part">
+        <h2>Pick your colourway</h2>
+        <p class="sub">Sets every part at once. A pairs the colour with a soft neutral, B with its light tint.</p>
+        <div class="presets" id="presets"></div>
+        <div class="finish-row"><span>Finish</span><div class="finish-seg" id="finishes" role="group" aria-label="Finish"></div></div>
+      </section>
+      <button class="surprise" id="surprise" type="button"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2.5" y="2.5" width="13" height="13" rx="3"/><circle cx="6" cy="6" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="9" cy="9" r="1" fill="currentColor"/></svg>Surprise me</button>
+      <div id="part-cards"></div>
+      <p class="note">Upload your own part as an STL to try it on the brush. It stays in this browser, and share links show the original part in its place.</p>
+      <section class="part" id="sticker-card">
+        <h2>Pick your stickers</h2>
+        <p class="sub">Choose one, then click anywhere on the brush to stick it on.</p>
+        <div class="stickers" id="sticker-tiles"></div>
+        <div class="sliders">
+          <label>Size <input type="range" id="st-size" min="0.4" max="2" step="0.05" value="0.9"><output id="st-size-o">0.9</output></label>
+          <label>Rotate <input type="range" id="st-rot" min="-180" max="180" step="5" value="0"><output id="st-rot-o">0°</output></label>
+        </div>
+      </section>
+      <section class="part">
+        <h2>On your brush</h2>
+        <ul class="list" id="sticker-list"></ul>
+        <p class="note" style="margin-bottom:0"><button class="text-btn" id="clear-stickers" type="button">Clear stickers</button></p>
+      </section>
+      <p class="note"><button class="text-btn" id="reset" type="button">Reset appearance</button></p>
+    </section>
+
+    <section class="step" id="step-3" aria-labelledby="st3" hidden>
+      <h2 class="step-title" id="st3">Give your character a name</h2>
+      <p class="sub">It's printed on the box and the passport.</p>
+      <label class="name-field"><span>Name</span><input id="char-name" type="text" maxlength="14" autocomplete="off" placeholder="Up to 14 letters"></label>
+      <div class="prints"><div class="box-mock" id="box-mock" aria-label="Box preview"></div><div class="passport" id="passport" aria-label="Passport preview"></div></div>
+    </section>
+
+    <section class="step" id="step-4" aria-labelledby="st4" hidden>
+      <h2 class="step-title" id="st4">Grown-up check</h2>
+      <p class="sub">Kids design, grown-ups pay. Review the build, then check out.</p>
+      <div class="review" id="review"></div>
+      <p class="price-note">Price and delivery are confirmed at checkout.</p>
+      <label class="confirm"><input type="checkbox" id="grownup"><span>I'm a grown-up and I've checked this build.</span></label>
+      <button class="cta wide" id="checkout" type="button" disabled>Check out</button>
+    </section>
+
+    <div class="step-nav"><button class="btn-sec" id="step-back" type="button">Back</button><button class="cta" id="step-next" type="button">Next</button></div>
+  </div>
+</main>
+
+<dialog id="designs-dlg" aria-labelledby="designs-title">
+  <div class="dlg-head"><h2 id="designs-title">My designs</h2><button class="link-btn" id="close-designs" type="button">Close</button></div>
+  <div class="dlg-body">
+    <button class="cta" id="save-design" type="button">Save current design</button>
+    <div class="designs" id="designs"></div>
+    <p class="empty" id="designs-empty">Designs you save appear here. They stay in this browser.</p>
+  </div>
+</dialog>
+<input type="file" id="file" accept=".stl">
+<div class="toast" id="toast" role="status"></div>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

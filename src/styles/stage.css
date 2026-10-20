@@ -1,0 +1,34 @@
+/* ---------- product layout ---------- */
+.pdp{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(360px,1fr);gap:56px;padding:4px 40px 80px;align-items:start}
+.media{position:sticky;top:calc(76px + env(safe-area-inset-top,0px))}
+.stage{position:relative;background:var(--stage);border-radius:var(--card);overflow:hidden;height:calc(100svh - 96px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));min-height:480px} /* fills the viewport under the header, matching the side panel */
+.stage canvas{display:block;width:100%;height:100%;outline:none;cursor:grab;touch-action:none;position:relative;z-index:1}
+.stage.placing canvas{cursor:crosshair}
+/* soft colour pool behind the 3D brush */
+.stage::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(46% 40% at 50% 52%,var(--accent-soft) 0,rgba(232,228,222,0) 100%);opacity:.7;transition:opacity .4s}
+.round{position:absolute;top:50%;transform:translateY(-50%);width:52px;height:52px;border-radius:50%;border:0;background:#fff;color:#252525;cursor:pointer;display:grid;place-items:center;z-index:4}
+.round svg{width:20px;height:20px}
+.round.prev{left:28px}.round.next{right:28px}
+.toolbar{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;z-index:4;width:max-content;max-width:calc(100% - 24px)}
+/* SURI CTA: charcoal pill, Plain Regular 14/14, 15-35-13-35 padding */
+.tb-main{height:34px;padding:0 18px;border:0;border-radius:var(--pill);background:#252525;color:#fafafa;font-family:var(--font);font-size:13px;line-height:13px;font-weight:var(--reg);cursor:pointer;white-space:nowrap;transition:background .2s}
+.tb-main:hover{background:#0c0c0c}
+.tb-main[aria-pressed="true"]{background:rgba(250,250,250,.75);color:#252525}
+/* SURI outlined pills (as in the product imagery): hairline charcoal outline on a soft frosted fill */
+.seg{display:flex;gap:2px;padding:3px;border-radius:var(--pill);background:rgba(250,250,250,.75);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.seg button{height:28px;padding:0 12px;border:0;background:transparent;border-radius:var(--pill);color:#595959;font-family:var(--font);font-size:13px;line-height:13px;font-weight:var(--reg);cursor:pointer;white-space:nowrap;transition:background .2s,color .2s}
+.seg button:hover{color:#252525}
+.seg button[aria-pressed="true"]{background:#252525;color:#fafafa}
+:is(.tb-main,.seg button):focus-visible{outline:2px solid #252525;outline-offset:2px}
+.placing-hint{position:absolute;left:50%;top:120px;transform:translateX(-50%);background:var(--ink);color:var(--on-ink);
+  font-size:14px;font-weight:var(--reg);padding:10px 18px;border-radius:var(--pill);display:none;white-space:nowrap;z-index:5}
+.stage.placing .placing-hint{display:block}
+/* undo / redo: a pair of round buttons at the bottom-left of the stage */
+.undo{position:absolute;z-index:5;left:16px;bottom:16px;width:40px;height:40px;border-radius:50%;border:0;background:rgba(250,250,250,.8);color:var(--ink);display:grid;place-items:center;cursor:pointer;box-shadow:0 2px 8px rgba(60,40,35,.1);transition:opacity .2s,transform .2s}
+.undo.redo{left:64px}
+.undo svg{width:18px;height:18px}
+.undo:hover{transform:rotate(-12deg)}
+.undo.redo:hover{transform:rotate(12deg)}
+.undo[disabled]{opacity:0;pointer-events:none}
+.undo:focus-visible{outline:2px solid var(--ink);outline-offset:2px}

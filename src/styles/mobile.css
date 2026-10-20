@@ -1,0 +1,21 @@
+/* Task 17 owns the pinned-viewer layout; these are the legacy breakpoints, with any declaration the legacy
+   TYPE + SPACING block overrode dropped or folded so the final values match. */
+@media (max-width: 1000px){
+  .pdp{grid-template-columns:1fr;gap:20px;padding:0 16px 56px}
+  .media{position:relative;top:0}
+  .stage{height:62svh;min-height:400px}
+  .nav{display:none}
+  .topbar{grid-template-columns:auto 1fr;padding:10px 16px}
+  .wordmark img{height:18px}
+  .round{width:42px;height:42px}.round.prev{left:12px}.round.next{right:12px}
+  .tb-main{height:32px;padding:0 14px}
+  .seg button{height:26px;padding:0 10px}
+  .icon-btn span{display:none}
+}
+@media (max-width:520px){
+  :root{--t-display:22px;--t-title:16px}
+  section.part{padding:16px}
+  .step-nav{margin:24px -16px 0;padding-left:16px;padding-right:16px}
+  .pp-f b{font-size:10.5px}.pp-f.name b{font-size:13px}.pp-f small{font-size:6.5px}
+}
+@media (max-width:480px){.steps .node{width:58px}.steps .count{display:none}}

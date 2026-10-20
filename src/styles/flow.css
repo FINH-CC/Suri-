@@ -1,0 +1,79 @@
+/* ---------- info column ---------- */
+.info{padding-top:16px;min-width:0}
+/* product header: sized and spaced to match the SURI Pro product page */
+.info h1{margin:0;font-weight:300;font-size:var(--t-display);line-height:1.2;color:var(--ink);letter-spacing:-.01em}
+.info .tagline{margin:4px 0 0;font-size:var(--t-title);line-height:1.35;font-weight:300;color:var(--muted)}
+.info .meta{margin:18px 0 0;font-size:17px;line-height:1.4;font-weight:300}
+.features{display:none} /* hidden for now; markup kept */
+.features li{display:flex;align-items:center;gap:20px;font-size:17px;line-height:1.35;font-weight:300}
+.features svg{width:24px;height:24px;flex:none}
+
+/* ---------- step flow ---------- */
+/* level track: dots joined by a track that fills as you go; current level bounces, done levels get a check */
+.steps{display:flex;align-items:flex-start;margin-top:4px;padding:12px 0 4px;
+  position:sticky;top:calc(58px + env(safe-area-inset-top,0px));background:var(--bg);z-index:6}
+.steps .node{flex:none;display:flex;flex-direction:column;align-items:center;gap:8px;width:72px;background:none;border:0;padding:0;margin:0;cursor:pointer;font:inherit;color:var(--muted)}
+.steps .dot{position:relative;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:400;
+  background:rgba(250,250,250,.6);box-shadow:inset 0 0 0 1.5px rgba(37,37,37,.22);transition:transform .2s}
+.steps .dot svg{width:16px;height:16px}
+.steps .nm{font-size:var(--t-body);line-height:1.2;font-weight:300;white-space:nowrap}
+.steps .node:hover .dot{transform:translateY(-2px)}
+.steps .node.done{color:var(--ink)}
+.steps .node.done .dot{background:var(--ink);color:#fafafa;box-shadow:none;animation:stamp .35s cubic-bezier(.3,1.6,.5,1)}
+.steps .node.cur{color:var(--ink)}
+.steps .node.cur .nm{font-weight:400}
+.steps .node.cur .dot{background:var(--accent);color:var(--ink);box-shadow:0 3px 0 var(--accent-deep);animation:hop 1.6s cubic-bezier(.3,0,.3,1) .2s infinite}
+.steps .node.cur .dot::after{content:"";position:absolute;inset:-6px;border-radius:50%;box-shadow:0 0 0 2px var(--accent);opacity:0;animation:ping 1.6s ease-out .2s infinite}
+.steps .link{flex:1;height:4px;margin:14px -16px 0;border-radius:4px;background:rgba(37,37,37,.13);overflow:hidden;min-width:16px}
+.steps .link i{display:block;height:100%;width:0;background:var(--ink);border-radius:inherit}
+.steps .link.done i{width:100%}
+.steps .link.fill i{animation:stepFill .6s cubic-bezier(.2,.7,.2,1) forwards}
+.steps .count{flex:none;align-self:center;margin-left:14px;font-size:12px;letter-spacing:.08em;color:var(--muted);white-space:nowrap}
+@keyframes stepFill{from{width:0}to{width:100%}}
+@keyframes hop{0%,55%,100%{transform:none}12%{transform:translateY(0) scale(1.08,.92)}26%{transform:translateY(-6px) scale(.96,1.05)}40%{transform:translateY(0) scale(1.05,.95)}}
+@keyframes ping{0%{opacity:.7;transform:scale(.85)}70%,100%{opacity:0;transform:scale(1.25)}}
+@keyframes stamp{0%{transform:scale(.6)}100%{transform:none}}
+@media (prefers-reduced-motion:reduce){.steps .node .dot,.steps .node .dot::after,.steps .link i{animation:none!important}.steps .link.fill i{width:100%}}
+.steps button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.step{padding-top:16px}
+.step-kicker{margin:0;font-size:14px;font-weight:var(--reg);color:var(--forest)}
+.step-title{font-size:var(--t-title);line-height:1.3;margin:0 0 2px;font-weight:400}
+/* step transition */
+.step:not([hidden]){animation:stepIn .4s cubic-bezier(.2,.7,.2,1)}
+@keyframes stepIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.step:not([hidden]){animation:none}}
+.step-nav{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:24px -24px 0;padding:12px 24px calc(16px + env(safe-area-inset-bottom,0px));
+  position:sticky;bottom:0;background:var(--bg);z-index:6}
+.step-nav::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:28px;pointer-events:none;background:linear-gradient(to bottom,rgba(222,215,211,0),var(--bg))}
+.step-nav #step-next{margin-left:auto}
+:is(.btn-sec,#step-next):focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+/* ---------- 1 / Start: character cards ---------- */
+.chars{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px}
+.char{position:relative;text-align:left;background:var(--surface);border:1px solid transparent;border-radius:var(--box);padding:6px 6px 12px;cursor:pointer;box-shadow:0 2px 10px rgba(70,50,45,.12);display:flex;flex-direction:column;gap:2px;font:inherit;color:inherit}
+.char:hover{border-color:var(--line)}
+.char[aria-pressed="true"]{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink),0 2px 10px rgba(70,50,45,.12)}
+.char:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.char img{width:100%;aspect-ratio:1;object-fit:contain;background:var(--stage);border-radius:var(--card);margin-bottom:6px}
+.char strong{font-size:var(--t-title);line-height:1.2;font-weight:400;color:var(--ink);padding:0 4px}
+.char span:not(.badge){font-size:var(--t-body);line-height:1.45;color:var(--muted);padding:0 4px}
+.char .badge{top:14px;right:14px;color:#fafafa}
+
+/* ---------- 3 / Name it ---------- */
+.name-field{display:block;margin-top:22px}
+.name-field span{display:block;font-size:var(--t-caps);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.name-field input{width:100%;font:inherit;font-size:var(--t-title);font-weight:400;line-height:1.3;color:var(--ink);background:transparent;border:0;border-bottom:1px solid #595959;border-radius:0;padding:4px 0 8px}
+.name-field input:focus{outline:none;border-bottom-color:var(--ink)}
+.name-field input::placeholder{color:rgba(37,37,37,.32)}
+
+/* ---------- 4 / Hand over ---------- */
+.review{background:var(--surface);border-radius:var(--box);padding:4px 20px;box-shadow:0 2px 10px rgba(70,50,45,.12);margin-top:20px}
+.review-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:var(--t-body)}
+.review-row:last-child{border-bottom:0}
+.review-row .k{width:76px;flex:none;font-size:var(--t-body);color:var(--muted)}
+.review-row .v{flex:1;min-width:0}
+.review-row i{width:18px;height:18px;border-radius:50%;flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+.review-row button{background:none;border:0;border-bottom:1px solid var(--muted);padding:0;font-size:13px;font-weight:var(--reg);cursor:pointer;color:var(--ink)}
+.price-note{font-size:var(--t-body);line-height:1.5;color:var(--muted);margin:14px 0 0}
+.confirm{display:flex;gap:12px;align-items:flex-start;margin:20px 0 16px;font-size:var(--t-body);cursor:pointer}
+.confirm input{width:20px;height:20px;margin:1px 0 0;accent-color:#252525;flex:none}

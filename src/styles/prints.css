@@ -1,0 +1,45 @@
+.prints{display:grid;grid-template-columns:1fr;gap:12px;margin-top:16px}
+/* ---- box front ---- */
+.box-mock{position:relative;aspect-ratio:16/10;border-radius:12px;overflow:hidden;padding:20px 22px;display:flex;flex-direction:column;justify-content:space-between;color:#252525;box-shadow:0 2px 10px rgba(70,50,45,.12)}
+.box-mock .top{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between}
+.box-mock .wm{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.26em;font-weight:400}
+.box-mock .wm img{display:block;height:14px;width:auto;vertical-align:-1px;margin-right:6px}
+.box-mock .ssn{position:absolute;right:16px;bottom:14px;z-index:3;font-size:9px;letter-spacing:.16em;font-weight:400;padding:4px 8px;border-radius:var(--pill);background:rgba(255,255,255,.7);box-shadow:none;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.box-mock .disc{position:absolute;z-index:0;right:-10%;top:50%;width:64%;aspect-ratio:1;border-radius:50%;transform:translateY(-50%)}
+.box-mock .br{position:absolute;z-index:1;right:-2%;top:57%;height:104%;width:auto;transform:translateY(-50%);filter:drop-shadow(0 10px 14px rgba(40,30,30,.18))}
+.box-mock .bottom{position:relative;z-index:2;max-width:54%}
+.box-mock .nm{display:block;font-weight:300;line-height:1.02;letter-spacing:-.015em;overflow-wrap:normal;word-break:normal;hyphens:none}
+.box-mock .nm.ph{opacity:.42}
+.box-mock .desc{display:block;margin-top:10px;font-size:var(--t-caps);letter-spacing:.04em;line-height:1.5;opacity:.72}
+/* ---- passport data page ---- */
+.passport{position:relative;min-height:0;container-type:inline-size;border-radius:12px;overflow:hidden;color:#2b2a33;font-size:12px;display:flex;flex-direction:column;
+  background:
+    radial-gradient(120% 90% at 85% 10%,rgba(173,170,225,.28),transparent 60%),
+    radial-gradient(90% 80% at 0% 100%,rgba(102,191,141,.16),transparent 60%),
+    repeating-radial-gradient(circle at 78% 62%,rgba(120,110,190,.10) 0 1px,transparent 1px 7px),
+    repeating-linear-gradient(115deg,rgba(120,110,190,.05) 0 1px,transparent 1px 9px),
+    #f7f4ee;
+  box-shadow:0 2px 10px rgba(70,50,45,.12),inset 0 0 0 1px rgba(0,0,0,.05)}
+.pp-head{display:flex;align-items:center;gap:10px;padding:12px 16px 8px}
+.pp-crest{width:26px;height:26px;flex:none;color:#7c78c4}
+.pp-head .t{display:flex;flex-direction:column;line-height:1.15;white-space:nowrap}
+.pp-head .t b{font-size:11px;letter-spacing:.2em;font-weight:500}
+.pp-head .t i{font-style:normal;font-size:9px;letter-spacing:.2em;color:#6b6878}
+.pp-head .no{margin-left:auto;text-align:right;line-height:1.15;white-space:nowrap;display:flex;flex-direction:column}
+.pp-body{display:grid;grid-template-columns:28% 1fr;gap:16px;padding:4px 16px 12px}
+.pp-photo{position:relative;align-self:start;aspect-ratio:3.5/4.5;border-radius:8px;overflow:hidden;background:var(--b);box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+/* playful backdrop: a sunburst in the character's colour with a few twinkles */
+.pp-photo .burst{position:absolute;inset:-40%;background:repeating-conic-gradient(from 0deg at 50% 62%,var(--a) 0 9deg,var(--b) 9deg 18deg);opacity:.9}
+.pp-photo .burst::after{content:"";position:absolute;left:50%;top:62%;width:44%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle,#fff 0,rgba(255,255,255,.65) 45%,transparent 72%)}
+.pp-photo .spark{position:absolute;width:12%;aspect-ratio:1;background:var(--c);clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);z-index:1}
+.pp-photo .s1{left:9%;top:10%}.pp-photo .s2{right:10%;top:22%;width:8%}.pp-photo .s3{left:14%;bottom:16%;width:7%;opacity:.7}
+.pp-photo img{position:absolute;z-index:2;inset:0;width:100%;height:100%;object-fit:cover;filter:drop-shadow(0 6px 8px rgba(40,30,30,.22))}
+.pp-fields{display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;align-content:start;min-width:0;position:relative}
+.pp-f{display:flex;flex-direction:column;min-width:0}
+.pp-f.wide{grid-column:1/-1}
+.pp-f small,.pp-head .no small{font-size:7.5px;letter-spacing:.08em;text-transform:uppercase;color:#7a7786;font-weight:400}
+.pp-f b,.pp-head .no b{font-size:12px;font-weight:400;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pp-f.name b{font-size:15px}
+.pp-sig{font-style:italic;font-size:15px;font-weight:300;color:#3c3a8a;border-bottom:1px solid rgba(43,42,51,.25);padding-bottom:1px;text-transform:none!important;letter-spacing:0!important}
+.pp-ghost{position:absolute;right:-4px;bottom:-6px;width:44px;opacity:.16;filter:grayscale(1);pointer-events:none}
+.pp-mrz{margin-top:auto;background:rgba(255,255,255,.72);padding:7px 16px 8px;font-family:"OCR B","OCR-B",ui-monospace,Menlo,Consolas,monospace;font-size:9px;font-size:calc((100cqw - 32px) / 44 / .66);line-height:1.4;letter-spacing:.04em;color:#2b2a33;white-space:pre;overflow:hidden}

@@ -10,6 +10,7 @@ import type { BrushMeta, CadGeo } from './model';
 import { buildPart, dispose } from './parts/index';
 import type { BuildCtx } from './parts/index';
 import { makeEnv, makeRenderer } from './renderer';
+import { disposeSnapshots } from './snapshot';
 import { SSAO } from './ssao';
 
 /* ---------- pure helpers (no DOM) ---------- */
@@ -443,6 +444,7 @@ export class BrushScene {
     this.ro.disconnect();
     this.controls.dispose();
     PARTS.forEach((p) => this.groups[p.id].children.forEach((c) => dispose(c)));
+    disposeSnapshots(this);
     this.renderer.dispose();
   }
 }

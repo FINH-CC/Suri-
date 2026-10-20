@@ -24,7 +24,8 @@ function deepFreeze<T>(o: T): T {
 
 export function createStore(initial: Design, io: { save(json: string): void; now?: () => number; uploads?: () => Partial<Record<PartId, boolean>> }): Store {
   const now = io.now ?? Date.now;
-  const dev = typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production';
+  // Vite sets DEV in the browser and in Vitest; plain node falls back to NODE_ENV.
+  const dev = import.meta.env?.DEV ?? process.env.NODE_ENV !== 'production';
   const check = (d: unknown): Design => {
     const v = validate(d, { uploads: io.uploads?.() });
     return dev ? deepFreeze(v) : v;

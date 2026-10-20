@@ -189,10 +189,14 @@ export function projectStickers(
   // project decals with every part at rest, then parent them to their part
   const G = scene.groups;
   const saved = PARTS.map((p) => G[p.id].position.clone());
-  PARTS.forEach((p) => G[p.id].position.set(0, 0, 0));
-  scene.scene.updateMatrixWorld(true);
-  const made = stickers.map((st) => [st, decalFor(scene, st, textureFor)] as const);
-  PARTS.forEach((p, i) => G[p.id].position.copy(saved[i]));
+  let made: (readonly [Sticker, THREE.Mesh | null])[];
+  try {
+    PARTS.forEach((p) => G[p.id].position.set(0, 0, 0));
+    scene.scene.updateMatrixWorld(true);
+    made = stickers.map((st) => [st, decalFor(scene, st, textureFor)] as const);
+  } finally {
+    PARTS.forEach((p, i) => G[p.id].position.copy(saved[i])); // never leave the parts collapsed, even on a throw
+  }
   for (const [st, m] of made) {
     if (!m) continue; // probe ray missed: dropped silently
     m.userData.isSticker = true;
