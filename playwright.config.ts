@@ -20,7 +20,7 @@ export default defineConfig({
     {
       name: 'mobile',
       testIgnore: 'legacy.spec.ts',
-      use: { ...devices['iPhone 13'], baseURL: 'http://localhost:3240' },
+      use: { ...devices['iPhone 13'], defaultBrowserType: 'chromium', baseURL: 'http://localhost:3240' },
     },
     {
       name: 'legacy',
