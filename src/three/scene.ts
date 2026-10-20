@@ -412,7 +412,6 @@ export class BrushScene {
     G.head.position.set(0, 2.8 * ex, 0);
     G.cap.position.set(0, this.lift + 5.6 * ex, 0);
     G.grip.position.set(-3.2 * ex, 0, 0);
-    G.charm.position.set(2.6 * ex, 0, 0);
     G.mount.position.set(0, 0, -3.6 * ex);
     G.handle.position.set(0, 0, 0);
     G.button.position.set(0, 0, 0); // reset every frame so the pop offset never accumulates

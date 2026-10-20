@@ -1,4 +1,4 @@
-export type PartId = 'cap' | 'head' | 'grip' | 'handle' | 'button' | 'charm' | 'mount';
+export type PartId = 'cap' | 'head' | 'grip' | 'handle' | 'button' | 'mount';
 export type FinishId = 'matte' | 'satin' | 'speckle';
 export type StickerType = 'star' | 'heart' | 'smile' | 'bolt' | 'cloud' | 'rainbow' | 'flower' | 'moon';
 
@@ -15,7 +15,6 @@ export const PARTS: PartDef[] = [
   { id: 'grip', name: 'Grip', sub: 'A sleeve that changes the look and feel of the handle.', options: { smooth: 'Smooth', ribs: 'Ribs', dots: 'Dots', rings: 'Rings' } },
   { id: 'handle', name: 'Handle', sub: 'The core. Houses the motor and battery.', options: { core: 'Core' } },
   { id: 'button', name: 'Button', sub: 'The power button. Match it or make it pop.', options: { core: 'Core' } },
-  { id: 'charm', name: 'Charm', sub: 'A collectible character that clips on.', options: { cloud: 'Cloud', star: 'Star', sprout: 'Sprout', fish: 'Fish', none: 'None' } },
   { id: 'mount', name: 'Mount', sub: 'Mirror mount that holds the brush. It can be themed.', options: { original: 'Original', cloud: 'Cloud', arch: 'Arch' } },
 ];
 

@@ -19,7 +19,7 @@ Object.values(FAM).forEach((f) => {
 });
 
 // Each family has two pairings: A = bold + soft neutral (calmer), B = bold + its light tint.
-// Bold goes on the playful parts (cap, grip, charm); the pairing colour on head, handle and mount.
+// Bold goes on the playful parts (cap, grip, button); the pairing colour on head, handle and mount.
 export const PRESETS: { name: string; c: Record<PartId, string> }[] = [];
 Object.values(FAM).forEach((f) => {
   (
@@ -30,7 +30,7 @@ Object.values(FAM).forEach((f) => {
   ).forEach(([v, second]) =>
     PRESETS.push({
       name: `${f.name} ${v}`,
-      c: { cap: f.bold, grip: f.bold, charm: f.bold, button: f.bold, head: second, handle: second, mount: second },
+      c: { cap: f.bold, grip: f.bold, button: f.bold, head: second, handle: second, mount: second },
     }),
   );
 });

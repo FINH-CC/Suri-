@@ -25,7 +25,6 @@ const THUMB_VIEW: Record<PartId, { dir: [number, number, number]; tilt: number; 
   grip: { dir: [0.6, 0.3, 1], tilt: 0.75 },
   handle: { dir: [0.6, 0.3, 1], tilt: 0.75 },
   button: { dir: [0.25, 0.2, 1], tilt: 0 },
-  charm: { dir: [0.3, 0.15, 1], tilt: 0 },
   mount: { dir: [0.35, 0.15, 1], tilt: 0.2 },
 };
 /** Whole-brush tile camera (legacy THUMB_BRUSH, 1456). */
@@ -214,7 +213,7 @@ export function disposeSnapshots(bs: BrushScene): void {
  * Render `design` off-screen as a transparent PNG data URL.
  * - `hero`: leaning three-quarter perspective of the whole brush (no mount) — box, passport, My designs.
  * - `card`: orthographic whole-brush tile (no mount) — character cards, Start screen.
- * - `tile`: one part (`opts.part`, style `opts.style` or the design's), framed by its THUMB_VIEW. Returns '' for no charm.
+ * - `tile`: one part (`opts.part`, style `opts.style` or the design's), framed by its THUMB_VIEW.
  */
 export function snapshot(
   bs: BrushScene,
@@ -236,7 +235,6 @@ export function snapshot(
     const id = opts.part;
     if (!id) throw new Error("snapshot(tile): opts.part is required");
     const style = opts.style ?? design.parts[id];
-    if (id === 'charm' && style === 'none') return '';
     g.add(buildPart(id, style, design.colours[id], ctx));
     const view = THUMB_VIEW[id];
     const minY = style !== 'upload' ? view.minY : undefined;

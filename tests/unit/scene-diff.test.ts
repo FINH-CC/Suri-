@@ -8,9 +8,11 @@ import type { Design } from '../../src/state/design';
 const clone = (d: Design): Design => JSON.parse(JSON.stringify(d));
 
 describe('scene diff', () => {
-  it('first build rebuilds all 7 parts, head before cap', () => {
+  it('first build rebuilds all 6 parts, head before cap, no charm', () => {
     const ids = partsToRebuild(null, DEFAULT);
     expect([...ids].sort()).toEqual(PARTS.map((p) => p.id).sort());
+    expect(ids.length).toBe(6);
+    expect(ids as string[]).not.toContain('charm');
     expect(ids.indexOf('head')).toBeLessThan(ids.indexOf('cap'));
   });
   it('a cap colour change rebuilds only the cap', () => {

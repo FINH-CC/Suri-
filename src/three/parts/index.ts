@@ -3,7 +3,6 @@ import type { PartId } from '../../data/parts';
 import { plastic } from '../materials';
 import { buildButton } from './button';
 import { buildCap } from './cap';
-import { buildCharm } from './charm';
 import type { BuildCtx } from './context';
 import { buildGrip } from './grip';
 import { buildHandle } from './handle';
@@ -22,7 +21,6 @@ const BUILDERS: Record<PartId, (style: string, hex: string, ctx: BuildCtx) => TH
   grip: buildGrip,
   handle: buildHandle,
   button: buildButton,
-  charm: buildCharm,
   mount: buildMount,
 };
 

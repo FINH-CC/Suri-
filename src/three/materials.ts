@@ -66,7 +66,7 @@ export function speckle<M extends THREE.Material>(mat: M): M {
   return mat;
 }
 
-/** The chosen finish, applied to the main plastic of handle, cap, grip, charm and mount. */
+/** The chosen finish, applied to the main plastic of handle, cap, grip and mount. */
 export function applyFinish(m: THREE.MeshPhysicalMaterial, finish: FinishId): THREE.MeshPhysicalMaterial {
   // pre-finish values, kept so a finish-only change can re-finish the material without rebuilding (scene.refinish)
   m.userData.finishable = true;

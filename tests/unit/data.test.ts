@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { SWATCHES, PRESETS, mixHex, lum, swatchName, HEX } from '../../src/data/palette';
-import { PART, dimFor } from '../../src/data/parts';
+import { PART, PARTS, dimFor } from '../../src/data/parts';
 import { CHARACTERS, DEFAULT } from '../../src/data/characters';
 
 describe('data modules', () => {
@@ -16,6 +16,17 @@ describe('data modules', () => {
     expect(PART.cap.options.bubble).toBe('Pebble');
     expect(DEFAULT.name).toBe('Nova');
     expect(DEFAULT.parts).not.toBe(CHARACTERS.nova.parts);
+  });
+  it('six parts, no charm anywhere', () => {
+    expect(PARTS.length).toBe(6);
+    expect(PARTS.map((p) => p.id)).toEqual(['cap', 'head', 'grip', 'handle', 'button', 'mount']);
+    expect(PRESETS.every((p) => !('charm' in p.c))).toBe(true);
+    for (const c of Object.values(CHARACTERS)) {
+      expect('charm' in c.parts).toBe(false);
+      expect('charm' in c.colours).toBe(false);
+    }
+    expect('charm' in DEFAULT.parts).toBe(false);
+    expect('charm' in DEFAULT.colours).toBe(false);
   });
   it('mixHex and lum', () => {
     expect(mixHex('#000000', '#ffffff', 0.5)).toBe('#808080');

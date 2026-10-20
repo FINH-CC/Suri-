@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT } from '../../src/data/characters';
-import { PARTS } from '../../src/data/parts';
 import { decode, encode, validate } from '../../src/state/design';
 
 describe('validate', () => {
@@ -50,10 +49,34 @@ describe('encode/decode', () => {
 
 describe('extra', () => {
   it('encode matches the legacy bytes', () => {
-    const parts: Record<string, string> = {};
-    PARTS.forEach((p) => (parts[p.id] = DEFAULT.parts[p.id]));
+    const P = DEFAULT.parts;
+    const parts = { cap: P.cap, head: P.head, grip: P.grip, handle: P.handle, button: P.button, mount: P.mount };
     const legacy = btoa(unescape(encodeURIComponent(JSON.stringify({ parts, colours: DEFAULT.colours, stickers: [], name: 'Nova', finish: DEFAULT.finish, character: 'nova' }))));
     expect(encode(DEFAULT)).toBe(legacy);
+    const out = JSON.parse(decodeURIComponent(escape(atob(encode(DEFAULT)))));
+    expect('charm' in out.parts).toBe(false);
+    expect('charm' in out.colours).toBe(false);
+  });
+  it('a legacy link carrying a charm validates without it and never throws', () => {
+    const legacy = {
+      parts: { ...DEFAULT.parts, charm: 'star' },
+      colours: { ...DEFAULT.colours, charm: '#adaae1' },
+      stickers: [
+        { t: 'star', p: 'charm', x: 0, y: 0, z: 0, nx: 0, ny: 0, nz: 1 },
+        { t: 'heart', p: 'cap', x: 0, y: 0, z: 0, nx: 0, ny: 0, nz: 1 },
+      ],
+      name: 'Nova', finish: DEFAULT.finish, character: 'nova',
+    };
+    let v!: ReturnType<typeof validate>;
+    expect(() => (v = validate(legacy))).not.toThrow();
+    expect('charm' in v.parts).toBe(false);
+    expect('charm' in v.colours).toBe(false);
+    expect(v.stickers.map((s) => s.p)).toEqual(['cap']);
+    expect(v.parts).toEqual(DEFAULT.parts);
+    const d = decode('#d=' + btoa(unescape(encodeURIComponent(JSON.stringify(legacy)))));
+    expect(d).not.toBeNull();
+    expect('charm' in d!.parts).toBe(false);
+    expect(d!.stickers.length).toBe(1);
   });
   it('lowercases colours', () => {
     expect(validate({ colours: { cap: '#ADAAE1' } }).colours.cap).toBe('#adaae1');

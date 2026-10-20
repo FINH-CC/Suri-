@@ -7,7 +7,6 @@ import { buildHandle } from '../../src/three/parts/handle';
 import { buildButton } from '../../src/three/parts/button';
 import { buildHead } from '../../src/three/parts/head';
 import { buildGrip } from '../../src/three/parts/grip';
-import { buildCharm } from '../../src/three/parts/charm';
 import { buildMount } from '../../src/three/parts/mount';
 import { buildPart, dispose } from '../../src/three/parts/index';
 import { buildCap } from '../../src/three/parts/cap';
@@ -63,16 +62,6 @@ describe('part builders', () => {
   it('grip rings: sleeve + 4 accent rings', () => {
     expect(meshes(buildGrip('rings', '#e0b0c0', ctx)).length).toBe(5);
   });
-  it('charm none: empty group', () => {
-    expect(buildCharm('none', '#ffd700', ctx).children.length).toBe(0);
-  });
-  it('charm star: the charm body hangs clear of the handle side', () => {
-    const g = buildCharm('star', '#ffd700', ctx);
-    g.updateMatrixWorld(true);
-    const body = g.children[0]; // the character group; the chain and arm follow it
-    const bb = new THREE.Box3().setFromObject(body);
-    expect(bb.min.x).toBeGreaterThan(ctx.dim.handleHalfX);
-  });
   it('mount arch: plate + 2 stripes', () => {
     expect(meshes(buildMount('arch', '#88aadd', ctx)).length).toBe(3);
   });
@@ -81,7 +70,7 @@ describe('part builders', () => {
   });
   it('buildPart: upload swaps in the uploaded geometry, kept on dispose', () => {
     const geo = new THREE.BoxGeometry();
-    const g = buildPart('charm', 'upload', '#ffffff', { ...ctx, uploads: { charm: geo } });
+    const g = buildPart('mount', 'upload', '#ffffff', { ...ctx, uploads: { mount: geo } });
     const [m] = meshes(g);
     expect(m.geometry).toBe(geo);
     expect(m.userData.keepGeo).toBe(true);

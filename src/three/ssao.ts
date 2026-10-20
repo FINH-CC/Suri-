@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 /*
  * Soft contact shading (screen-space ambient occlusion) for the lit product (legacy 1789-1853).
- * Darkens creases and places where parts meet (head on handle, button recess, grip edges, charm), the way
+ * Darkens creases and places where parts meet (head on handle, button recess, grip edges, mount), the way
  * soft studio light falls off in a product render. Uses a supersampled normal+depth buffer (legacy drawing
  * pipeline `rt.n`, 1690-1716; only what SSAO needs is ported: no id buffer, no edge pass).
  */
