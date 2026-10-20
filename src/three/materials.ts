@@ -30,16 +30,20 @@ export const siliconeSheen = (hex: string): { sheen: number; sheenColor: THREE.C
 });
 
 /** Matte bio-plastic, as in the SURI renders: high roughness, no clear coat, low reflectance. */
-export const plastic = (hex: string, o: THREE.MeshPhysicalMaterialParameters = {}): THREE.MeshPhysicalMaterial =>
-  new THREE.MeshPhysicalMaterial({
+export const plastic = (hex: string, o: THREE.MeshPhysicalMaterialParameters = {}): THREE.MeshPhysicalMaterial => {
+  const m = new THREE.MeshPhysicalMaterial({
     color: surfaceColour(hex),
     roughness: 0.66,
     metalness: 0,
     clearcoat: 0,
     clearcoatRoughness: 0.6,
-    ior: 1.45, // r128 reflectivity: .35
+    ior: 1.326, // r128 reflectivity .35: F0 = 0.16 * .35^2 = 0.0196 -> ior (1 + 0.14) / (1 - 0.14)
     ...o,
   });
+  // r128 sheen used the material's own roughness; current three has a separate sheenRoughness (default 1)
+  if (m.sheen > 0 && o.sheenRoughness === undefined) m.sheenRoughness = m.roughness;
+  return m;
+};
 
 /** Plant-based head: fine light/dark flecks, generated from position (CAD has no UVs). */
 export function speckle<M extends THREE.Material>(mat: M): M {
@@ -68,6 +72,7 @@ export function applyFinish(m: THREE.MeshPhysicalMaterial, finish: FinishId): TH
     m.roughness = 0.36;
     m.clearcoat = 0.3;
     m.clearcoatRoughness = 0.28;
+    if (m.sheen > 0) m.sheenRoughness = 0.36; // sheen follows the live roughness, as in r128
   } else if (finish === 'speckle') speckle(m);
   return m;
 }

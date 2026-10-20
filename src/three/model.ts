@@ -41,6 +41,8 @@ export async function loadModel(
     }),
   ]);
 
+  if (!meta || typeof meta.roles !== 'object' || meta.roles === null)
+    throw new Error(`brush meta ${metaUrl}: missing "roles" map`);
   return { cad: cadFromScene(gltf.scene, meta.roles), meta };
 }
 
@@ -58,19 +60,22 @@ function toFloat32(src: THREE.BufferGeometry): THREE.BufferGeometry {
 
 /**
  * Group a loaded glb scene's meshes into CadGeo by name prefix. GLTFLoader sanitises node names
- * ("handle/body" -> "handlebody"), so the original glTF name is read from `userData.name`.
+ * ("handle/body" -> "handlebody"), so the original glTF name is read from `userData.name`
+ * (or the parent's, for multi-primitive nodes).
  */
 export function cadFromScene(scene: THREE.Object3D, roles: Record<string, string>): CadGeo {
   const cad: CadGeo = { handle: [], head: [], mount: [] };
+  const skipped: string[] = [];
   scene.updateMatrixWorld(true);
   scene.traverse((o) => {
     if (!(o as THREE.Mesh).isMesh) return;
     const mesh = o as THREE.Mesh;
-    const name: string = mesh.userData.name ?? mesh.name;
+    // multi-primitive nodes become a Group of Meshes; the glTF name then lives on the parent
+    const name: string = mesh.userData.name ?? mesh.parent?.userData.name ?? mesh.name;
     const part = PARTS.find((p) => name.startsWith(p + '/'));
     const role = roles[name];
     if (!part || role === undefined) {
-      console.warn(`[model] unmapped mesh "${name}"`);
+      skipped.push(name);
       return;
     }
     const geo = toFloat32(mesh.geometry);
@@ -79,6 +84,7 @@ export function cadFromScene(scene: THREE.Object3D, roles: Record<string, string
     geo.computeBoundingSphere();
     cad[part].push({ role, geo });
   });
+  if (skipped.length) console.warn(`[model] skipped unmapped meshes: ${skipped.join(', ')}`);
   for (const p of PARTS) if (!cad[p].length) throw new Error(`brush glb has no ${p}/ meshes`);
   return cad;
 }
