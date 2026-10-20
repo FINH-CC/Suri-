@@ -30,6 +30,11 @@ export const FINISHES: Record<FinishId, { name: string; sub: string }> = {
 };
 
 export const DIM_STATIC = {
+  handleBottom: 0.9,
+  handleTop: 14.53,
+  handleHalfX: 1.03,
+  handleHalfZ: 0.9,
+  buttonY: [9.0, 11.3] as [number, number],
   padY: [20.2, 22.29] as [number, number],
   padHalfX: 0.59,
   padBackZ: -0.32,
