@@ -12,7 +12,8 @@
     "legacy": "vite preview --outDir legacy --port 3241",
     "capture-reference": "tsx scripts/capture-reference.ts",
     "extract-cad": "tsx scripts/extract-cad.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "cap-fit": "tsx scripts/cap-fit.ts"
   },
   "devDependencies": {
     "@gltf-transform/core": "^4.5.1",

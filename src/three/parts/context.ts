@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { dimFor, FinishId, PartId } from '../../data/parts';
+import type { CapCore } from '../capfit';
 import type { CadGeo } from '../model';
 
 /** Everything the legacy builders read from module scope (cadParts, DIM, CAD.tufts, state, uploads). */
@@ -10,6 +11,8 @@ export type BuildCtx = {
   finish: FinishId;
   headStyle: string;
   uploads: Partial<Record<PartId, THREE.BufferGeometry>>;
+  /** Cap cavity for the current head (cap-fit.json, or live for an uploaded head). Required to build the cap. */
+  capCore?: CapCore;
 };
 
 /** Legacy `sphere(r, mat, pos, scale)` (legacy/index.html line 715). */

@@ -13,7 +13,11 @@ import { buildMount } from './mount';
 export type { BuildCtx } from './context';
 
 const BUILDERS: Record<PartId, (style: string, hex: string, ctx: BuildCtx) => THREE.Group> = {
-  cap: buildCap,
+  cap: (style, hex, ctx) => {
+    const { capCore } = ctx;
+    if (!capCore) throw new Error('buildPart(cap): ctx.capCore is required');
+    return buildCap(style, hex, { ...ctx, capCore });
+  },
   head: buildHead,
   grip: buildGrip,
   handle: buildHandle,
