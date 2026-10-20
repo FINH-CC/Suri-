@@ -6,7 +6,7 @@
 
 **Architecture:** The client CAD moves out of the HTML into a compressed `.glb`; option tiles become pre-rendered images; cap fitting is precomputed. One typed store notifies two subscribers (the Three.js scene and the DOM) which each diff previous vs next state and touch only what changed. The 3D code is ported from `legacy/index.html` module by module and checked against reference screenshots of the current build.
 
-**Tech Stack:** Node 24, Vite 6, TypeScript 5 (strict), three (current release, r170+), @gltf-transform/core + /functions (meshopt), Vitest, Playwright. No UI framework. Static deploy to Vercel project finhcc/suri via the CLI.
+**Tech Stack:** Node 24, Vite 6 or newer, TypeScript 5 or newer (strict), three (current release, r170+), @gltf-transform/core + /functions (meshopt), Vitest, Playwright. No UI framework. Static deploy to Vercel project finhcc/suri via the CLI.
 
 **Spec:** `docs/superpowers/specs/2026-10-20-configurator-rebuild-design.md` (and the audit in `docs/2026-10-20-audit.md`).
 
