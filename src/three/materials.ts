@@ -68,6 +68,9 @@ export function speckle<M extends THREE.Material>(mat: M): M {
 
 /** The chosen finish, applied to the main plastic of handle, cap, grip, charm and mount. */
 export function applyFinish(m: THREE.MeshPhysicalMaterial, finish: FinishId): THREE.MeshPhysicalMaterial {
+  // pre-finish values, kept so a finish-only change can re-finish the material without rebuilding (scene.refinish)
+  m.userData.finishable = true;
+  m.userData.base ??= { roughness: m.roughness, clearcoat: m.clearcoat, clearcoatRoughness: m.clearcoatRoughness, sheenRoughness: m.sheenRoughness };
   if (finish === 'satin') {
     m.roughness = 0.36;
     m.clearcoat = 0.3;
