@@ -205,6 +205,13 @@ export class BrushScene {
     };
   }
 
+  /** Build context (finish, uploads, cap cavity fitted to `d.parts.head`) for building any design's parts, e.g. snapshots. */
+  buildCtxFor(d: Design): BuildCtx {
+    const ctx = this.ctxFor(d);
+    ctx.capCore = this.capCoreFor(d, ctx);
+    return ctx;
+  }
+
   private capCoreFor(d: Design, ctx: BuildCtx): CapCore {
     if (d.parts.head !== 'upload') return this.capFit[d.parts.head];
     const geo = this.uploads.head;
@@ -218,8 +225,7 @@ export class BrushScene {
   }
 
   private rebuild(id: PartId, d: Design): void {
-    const ctx = this.ctxFor(d);
-    ctx.capCore = this.capCoreFor(d, ctx);
+    const ctx = this.buildCtxFor(d);
     const g = this.groups[id];
     while (g.children.length) dispose(g.children.pop()!);
     const part = buildPart(id, d.parts[id], d.colours[id], ctx);

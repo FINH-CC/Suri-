@@ -5,6 +5,7 @@ import type { CapCore } from './three/capfit';
 import { loadModel } from './three/model';
 import { BrushScene } from './three/scene';
 import { placeSticker, projectStickers } from './three/stickers';
+import { snapshot } from './three/snapshot';
 import type { Sticker } from './state/design';
 import type { StickerType } from './data/parts';
 
@@ -15,6 +16,7 @@ declare global {
     __frames: () => number;
     __placeSticker: (t: StickerType, x: number, y: number) => Sticker | null;
     __current: () => Design;
+    __snapshot: typeof snapshot;
   }
 }
 
@@ -33,6 +35,7 @@ window.__scene = scene;
 window.__frames = () => scene.frames;
 window.__placeSticker = (t, x, y) => placeSticker(scene, t, x, y, 0.9, 0);
 window.__current = () => structuredClone(current);
+window.__snapshot = snapshot;
 window.__apply = (d) => {
   const prev = current;
   current = structuredClone(d);
