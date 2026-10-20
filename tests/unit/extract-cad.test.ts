@@ -7,6 +7,20 @@ import { MeshoptDecoder } from 'meshoptimizer';
 import { afterAll, beforeAll, expect, test } from 'vitest';
 import { extractCad } from '../../scripts/extract-cad';
 
+const ROLES = {
+  'handle/body': 'body',
+  'handle/button': 'button',
+  'handle/metal-0': 'metal',
+  'handle/metal-1': 'metal',
+  'handle/seal': 'seal',
+  'handle/metal-2': 'metal',
+  'handle/metal-3': 'metal',
+  'head/pad': 'body',
+  'mount/body': 'body',
+  'mount/insert': 'insert',
+  'mount/other-0': 'pad',
+};
+
 let outDir: string;
 let doc: Document;
 let meta: { tufts: number[][]; tuftFaceZ: number; roles: Record<string, string> };
@@ -41,13 +55,11 @@ test('glb keeps every vertex and triangle of the CAD', () => {
 
 test('meshes are named by part and role', () => {
   const names = doc.getRoot().listMeshes().map((m) => m.getName());
-  expect(names).toContain('handle/body');
-  expect(names).toContain('head/pad');
-  expect(names).toContain('mount/insert');
+  expect(names.sort()).toEqual(Object.keys(ROLES).sort());
 });
 
 test('meta carries tufts, tuft face and roles', () => {
   expect(meta.tufts).toHaveLength(59);
   expect(meta.tuftFaceZ).toBe(0.24);
-  expect(meta.roles['handle/body']).toBe('body');
+  expect(meta.roles).toEqual(ROLES);
 });

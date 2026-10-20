@@ -18,7 +18,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
-import { Document, NodeIO } from '@gltf-transform/core';
+import { Document, Logger, NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { meshopt, quantize } from '@gltf-transform/functions';
 import { MeshoptEncoder } from 'meshoptimizer';
@@ -62,14 +62,24 @@ function readCadJson(htmlPath: string): CadData {
   if (start < 0) throw new Error(`no <script id="cad-data"> in ${htmlPath}`);
   const open = html.indexOf('>', start) + 1;
   const close = html.indexOf('</script>', open);
-  return JSON.parse(html.slice(open, close)) as CadData;
+  if (close < 0) throw new Error(`<script id="cad-data"> in ${htmlPath} has no closing </script>`);
+  const cad = JSON.parse(html.slice(open, close)) as CadData;
+  for (const part of PARTS) {
+    if (!Array.isArray(cad[part])) throw new Error(`cad-data in ${htmlPath} has no "${part}" array`);
+  }
+  return cad;
 }
 
-/** base64 (optionally gzip-packed) → bytes, aligned for typed-array views. */
+/**
+ * base64 (optionally gzip-packed) → bytes in an ArrayBuffer of exactly that length.
+ * Node Buffers are views on a larger (pooled / gunzip) backing store, so copy out.
+ */
 function decodeField(sub: CadSub, key: 'pos' | 'nrm' | 'idx'): ArrayBuffer {
   let bytes: Uint8Array = Buffer.from(sub[key], 'base64');
   if (sub.gz) bytes = gunzipSync(bytes);
-  return bytes.slice().buffer as ArrayBuffer;
+  const out = new Uint8Array(bytes.byteLength);
+  out.set(bytes);
+  return out.buffer;
 }
 
 function meshNames(part: (typeof PARTS)[number], subs: CadSub[]): string[] {
@@ -82,7 +92,7 @@ function meshNames(part: (typeof PARTS)[number], subs: CadSub[]): string[] {
 
 export async function extractCad(legacyHtmlPath: string, outDir: string): Promise<void> {
   const cad = readCadJson(legacyHtmlPath);
-  const doc = new Document();
+  const doc = new Document().setLogger(new Logger(Logger.Verbosity.WARN));
   const buffer = doc.createBuffer();
   const scene = doc.createScene('brush');
   const roles: Record<string, string> = {};
@@ -106,6 +116,9 @@ export async function extractCad(legacyHtmlPath: string, outDir: string): Promis
       const ns = sub.n16 ? 32767 : 127;
       const nrm = new Float32Array(n.length);
       for (let i = 0; i < n.length; i++) nrm[i] = n[i] / ns;
+      if (pos.length % 3 !== 0 || nrm.length !== pos.length) {
+        throw new Error(`${name}: ${pos.length / 3} positions vs ${nrm.length / 3} normals`);
+      }
       const ib = decodeField(sub, 'idx');
       const idx = sub.i32 ? new Uint32Array(ib) : new Uint16Array(ib);
 
