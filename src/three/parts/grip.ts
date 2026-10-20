@@ -68,7 +68,7 @@ export function buildGrip(s: string, hex: string, ctx: BuildCtx): THREE.Group {
     for (let k = 0; k < SEG; k++) {
       const a = j * (SEG + 1) + k;
       const b2 = a + SEG + 1;
-      idx.push(a, b2, a + 1, a + 1, b2, b2 + 1);
+      idx.push(a, a + 1, b2, a + 1, b2 + 1, b2); // counter-clockwise from outside: outward normals (legacy wound inward)
     }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));

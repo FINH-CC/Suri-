@@ -10,6 +10,9 @@ import { buildGrip } from '../../src/three/parts/grip';
 import { buildCharm } from '../../src/three/parts/charm';
 import { buildMount } from '../../src/three/parts/mount';
 import { buildPart, dispose } from '../../src/three/parts/index';
+import { buildCap } from '../../src/three/parts/cap';
+import type { CapCore } from '../../src/three/capfit';
+import { readFileSync } from 'node:fs';
 
 let ctx: BuildCtx;
 
@@ -101,5 +104,43 @@ describe('part builders', () => {
     cadGeo.removeEventListener('dispose', onDispose);
     expect(cadDisposed).toBe(false);
     expect(owned).toBe(true);
+  });
+});
+
+/** Dot of each vertex normal with the outward radial direction, for ~50 vertices in the mid-height band. */
+function radialDots(m: THREE.Mesh): number[] {
+  const geo = m.geometry;
+  geo.computeBoundingBox();
+  const bb = geo.boundingBox!;
+  const cx = (bb.min.x + bb.max.x) / 2, cz = (bb.min.z + bb.max.z) / 2;
+  const lo = bb.min.y + 0.4 * (bb.max.y - bb.min.y), hi = bb.min.y + 0.6 * (bb.max.y - bb.min.y);
+  const pos = geo.getAttribute('position'), nor = geo.getAttribute('normal');
+  const mid: number[] = [];
+  for (let i = 0; i < pos.count; i++) if (pos.getY(i) >= lo && pos.getY(i) <= hi) mid.push(i);
+  const step = Math.max(1, Math.floor(mid.length / 50));
+  const out: number[] = [];
+  for (let k = 0; k < mid.length; k += step) {
+    const i = mid[k];
+    const r = new THREE.Vector3(pos.getX(i) - cx, 0, pos.getZ(i) - cz).normalize();
+    out.push(new THREE.Vector3(nor.getX(i), nor.getY(i), nor.getZ(i)).dot(r));
+  }
+  return out;
+}
+
+describe('surface winding (sticker decals rely on outward normals)', () => {
+  it('grip sleeve normals point outward', () => {
+    const sleeve = meshes(buildGrip('smooth', '#e0b0c0', ctx)).find((m) => !(m as THREE.InstancedMesh).isInstancedMesh)!;
+    const d = radialDots(sleeve);
+    expect(d.length).toBeGreaterThanOrEqual(40);
+    for (const v of d) expect(v).toBeGreaterThan(0);
+  });
+  it('cap outer sheet points outward, inner cavity sheet points inward', () => {
+    const fit = JSON.parse(readFileSync('public/model/cap-fit.json', 'utf8')) as Record<string, CapCore>;
+    const cap = buildCap('bubble', '#ffffff', { ...ctx, capCore: fit.plain });
+    const outer = radialDots(cap.children[0] as THREE.Mesh), inner = radialDots(cap.children[1] as THREE.Mesh);
+    expect(outer.length).toBeGreaterThanOrEqual(20);
+    expect(inner.length).toBeGreaterThanOrEqual(20);
+    for (const v of outer) expect(v).toBeGreaterThan(0);
+    for (const v of inner) expect(v).toBeLessThan(0);
   });
 });
