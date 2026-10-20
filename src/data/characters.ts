@@ -11,14 +11,20 @@ export interface CharacterDef {
   finish: FinishId;
 }
 
+export interface Sticker {
+  t: StickerType; p: PartId;
+  x: number; y: number; z: number; nx: number; ny: number; nz: number;
+  s: number; r: number;
+}
+
 /** Structural shape of a design; Task 5 aliases this as `Design`. */
 export interface DesignData {
   parts: Record<PartId, string>;
   colours: Record<PartId, string>;
-  stickers: { type: StickerType; [k: string]: unknown }[];
+  stickers: Sticker[];
   name: string;
   finish: FinishId;
-  character: CharacterId | null;
+  character: CharacterId | '';
 }
 
 export const presetC = (n: string): Record<PartId, string> => {
