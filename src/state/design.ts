@@ -57,7 +57,9 @@ export function encode(d: Design): string {
 export function decode(hash: string): Design | null {
   const b64 = hash.startsWith('#d=') ? hash.slice(3) : hash.startsWith('d=') ? hash.slice(2) : hash;
   try {
-    return validate(JSON.parse(decodeURIComponent(escape(atob(b64)))));
+    const parsed: unknown = JSON.parse(decodeURIComponent(escape(atob(b64))));
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    return validate(parsed);
   } catch {
     return null;
   }

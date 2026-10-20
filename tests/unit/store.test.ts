@@ -81,3 +81,33 @@ describe('store', () => {
     expect(store.canUndo()).toBe(false);
   });
 });
+
+describe('store fixes', () => {
+  it('upload survives only when io.uploads allows', () => {
+    const mk = (uploads?: () => Record<string, boolean>) =>
+      createStore(DEFAULT, { save: () => {}, uploads });
+    const a = mk(() => ({ cap: true }));
+    a.update({ parts: { ...a.get().parts, cap: 'upload' } });
+    expect(a.get().parts.cap).toBe('upload');
+    const b = mk();
+    b.update({ parts: { ...b.get().parts, cap: 'upload' } });
+    expect(b.get().parts.cap).toBe(DEFAULT.parts.cap);
+  });
+  it('mutating get() throws in dev', () => {
+    const { store } = make();
+    expect(() => { (store.get() as { name: string }).name = 'x'; }).toThrow();
+  });
+  it('sticker edit changing only s is saved and notified', () => {
+    const save = vi.fn();
+    const store = createStore(DEFAULT, { save, now: () => 1 });
+    const st = { t: 'star' as const, p: 'cap' as const, x: 0, y: 0, z: 0, nx: 0, ny: 0, nz: 1, s: 0.9, r: 0 };
+    store.update({ stickers: [st] });
+    const fn = vi.fn();
+    store.subscribe(fn);
+    save.mockClear();
+    store.update({ stickers: [{ ...st, s: 1.2 }] });
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(store.get().stickers[0].s).toBe(1.2);
+  });
+});
