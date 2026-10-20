@@ -392,3 +392,23 @@ Module import rule: `src/data` and `src/state` import nothing from `src/three` o
 - Spec coverage: §4 screens → Tasks 12–15; §5 layout → Tasks 12, 17; §6 stack/pipeline/state/scene/snapshots/tests/budgets → Tasks 1, 3, 4–11, 16, 18; §7 decisions → Global Constraints and Task 18 fallback. Decision "Finish changes materials in place" → Task 9 `finishOnly`. "Tapping a part on the brush scrolls to its card" → Task 13 uses `scene.partAt` (add: on canvas click without an armed sticker, `goStep(2)` and scroll to `#card-<part>` with the flash class; included in Task 13's implementation).
 - Types: `BuildCtx`, `CapCore`, `CadGeo`, `Design`, `Store`, `BrushScene` names are used consistently above.
 - Review Focus items map to Tasks 5, 5/15, 12, 13, 10.
+
+---
+
+## Amendments (2026-10-21, from Alexis during execution)
+
+### Task 11b: Remove the charm part
+
+**Files:**
+- Modify: `src/data/parts.ts` (drop `charm` from `PARTS`/`PartId`), `src/data/palette.ts` (presets no longer carry a `charm` key), `src/data/characters.ts` (no `charm` in parts/colours), `src/state/design.ts` (validate ignores a legacy `charm` key in `parts`/`colours` and drops stickers with `p === 'charm'`), `src/three/parts/index.ts` (no charm builder), `src/three/scene.ts` (no charm group/explode offset), `src/three/snapshot.ts` (no charm special case), tests touched by these.
+- Delete: `src/three/parts/charm.ts`.
+- Later tasks: no charm card (Task 13), no Charm review row (Task 14), no charm tiles (Task 16), no "Collectible charms" feature copy anywhere.
+
+- [ ] Update tests first (data: `PARTS.length === 6`; design: a legacy link carrying `parts.charm`/`colours.charm`/a charm sticker validates without those and without throwing; scene-diff: no charm), run → FAIL; implement; `npm run typecheck`; `npm test` → PASS; commit `refactor: remove the charm part`.
+
+### Task 15 (amended): Undo and Redo, bottom-left of the stage
+- Store: add `redo(): boolean` and `canRedo(): boolean`; `undo()` pushes the undone state onto a forward stack; any new `update`/`replace` clears the forward stack. Tests for both.
+- Markup/CSS: `#undo` and `#redo` as a pair of round buttons at the bottom-left of `#stage` (`left: 16px; bottom: 16px`), same style as today's undo; both disabled when nothing to undo/redo; Cmd/Ctrl+Shift+Z or Cmd/Ctrl+Y = redo.
+
+### Task 19: Render quality pass (after Task 18)
+- Baseline = parity with legacy (Task 18). Produce three variants of the studio look (lighting rig, shadow softness, environment tint, anti-aliasing/supersampling) as side-by-side screenshots of Nova front + iso, with a one-line description each; Alexis picks one; apply it; re-capture the 17 shots as the new reference set. No geometry or UI changes in this task.
