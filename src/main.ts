@@ -17,7 +17,7 @@ import { DEFAULT_LOOK, LOOKS, isLookId } from './three/looks';
 import type { LookId } from './three/looks';
 import { loadModel } from './three/model';
 import { BrushScene } from './three/scene';
-import { projectStickers } from './three/stickers';
+import { projectStickers, warmStickerProgram } from './three/stickers';
 import { createFlow } from './ui/flow';
 import type { Step } from './ui/flow';
 import * as intro from './ui/intro';
@@ -198,6 +198,9 @@ async function boot(): Promise<void> {
     if (import.meta.env.DEV) (window as unknown as { __scene?: BrushScene }).__scene = s;
     if (import.meta.env.DEV && new URLSearchParams(location.search).has('tiles')) void import('./dev/tiles').then((m) => m.installTileRenderer(s));
     intro.finish();
+    // warm the sticker program while the user looks at the brush (first placement then skips a shader compile)
+    const idle = window.requestIdleCallback ?? ((fn: () => void) => setTimeout(fn, 300));
+    idle(() => void warmStickerProgram(s).catch((e) => console.warn('[stickers] warm-up failed', e)));
   } catch (err) {
     ac.abort(); // undo any half-finished mount so Retry starts clean
     unsubs.forEach((u) => u());

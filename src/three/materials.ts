@@ -59,6 +59,18 @@ export const setMaterialResponse = (r: MaterialResponse): void => {
 };
 export const materialResponse = (): MaterialResponse => response;
 
+/*
+ * The studio environment and its strength, for materials that need their own environment strength. three r186 sets
+ * envMapIntensity to scene.environmentIntensity on every standard material whose envMap is null, so a per-material
+ * strength only holds when the material carries the environment itself (stage and snapshots share the same PMREM).
+ */
+let studioEnv: THREE.Texture | null = null;
+let studioEnvIntensity = 1;
+export const setStudioEnv = (tex: THREE.Texture | null, intensity: number): void => {
+  studioEnv = tex;
+  studioEnvIntensity = intensity;
+};
+
 /**
  * Soft-touch silicone: a faint velvety sheen at grazing angles, tinted toward white.
  * r128 `sheen: Color(c * .32)` -> current `sheen: .32, sheenColor: c`. Spread into `plastic` options.
@@ -153,11 +165,13 @@ export function applyFinish(m: THREE.MeshPhysicalMaterial, finish: FinishId): TH
 }
 
 export const INK = '#252525';
-export const METAL = (): THREE.MeshStandardMaterial =>
-  new THREE.MeshStandardMaterial({
-    color: lin('#c9c9c6'),
-    metalness: 0.9,
-    roughness: response.metal.roughness,
-    envMapIntensity: response.metal.envMapIntensity,
-  });
+export const METAL = (): THREE.MeshStandardMaterial => {
+  const m = new THREE.MeshStandardMaterial({ color: lin('#c9c9c6'), metalness: 0.9, roughness: response.metal.roughness });
+  // brighter steel: carry the studio itself so the stronger reflection is not overwritten (parity: 1, scene default)
+  if (response.metal.envMapIntensity !== 1 && studioEnv) {
+    m.envMap = studioEnv;
+    m.envMapIntensity = studioEnvIntensity * response.metal.envMapIntensity;
+  }
+  return m;
+};
 export const GREY = (): THREE.MeshPhysicalMaterial => plastic('#bdbcbb', { roughness: 0.7, clearcoat: 0 });

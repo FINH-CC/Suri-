@@ -5,14 +5,14 @@ import type { FinishId, PartId } from '../data/parts';
 import type { Design } from '../state/design';
 import { capCore, capEnvelope } from './capfit';
 import type { CapCore } from './capfit';
-import { applyFinish, setMaterialResponse } from './materials';
+import { applyFinish, setMaterialResponse, setStudioEnv } from './materials';
 import type { BrushMeta, CadGeo } from './model';
 import { buildPart, dispose } from './parts/index';
 import type { BuildCtx } from './parts/index';
 import { expandByMeshes, expandByObjectR128 } from './box';
 import { LOOKS } from './looks';
 import type { Look } from './looks';
-import { makeEnv, makeKeyLight, makeRenderer, setKeyLight, toneMappingFor } from './renderer';
+import { makeEnv, makeKeyLight, makeRenderer, setKeyLight } from './renderer';
 import { disposeSnapshots } from './snapshot';
 import { SSAO } from './ssao';
 
@@ -311,7 +311,6 @@ export class BrushScene {
     const prev = this.look, first = this.lookVersion === 0, r = this.renderer, key = this.key;
     this.look = look;
     this.lookVersion++;
-    r.toneMapping = toneMappingFor(look.tone);
     r.toneMappingExposure = look.exposure;
     if (first || prev.env !== look.env) {
       const old = this.scene.environment;
@@ -361,10 +360,11 @@ export class BrushScene {
     const lx = 0 - look.key.pos[0], lz = 0 - look.key.pos[2]; // the key aims at the y axis
     this.groundDir.value.set(lx, -lz).normalize(); // world xz -> the floor plane's local xy (rotated -90deg about x)
     this.ssao.set(look.ssao);
-    if (!first && prev.material !== look.material) {
-      setMaterialResponse(look.material);
-      if (this.design) this.rebuildAll(this.design);
-    } else setMaterialResponse(look.material);
+    setStudioEnv(this.scene.environment, look.envIntensity);
+    setMaterialResponse(look.material);
+    // materials read the response and the studio when built: rebuild when either changed
+    const rebuild = prev.material !== look.material || prev.env !== look.env || prev.envIntensity !== look.envIntensity;
+    if (!first && rebuild && this.design) this.rebuildAll(this.design);
     this.resize();
     if (!first) this.requestFrame();
   }

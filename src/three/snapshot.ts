@@ -135,10 +135,6 @@ const OUTPUT_FRAG = /* glsl */ `
     if ( c.a > 0.0 ) c.rgb /= c.a;
     #if defined( CUSTOM_TONE_MAPPING )
       c.rgb = CustomToneMapping( c.rgb );
-    #elif defined( AGX_TONE_MAPPING )
-      c.rgb = AgXToneMapping( c.rgb );
-    #elif defined( ACES_FILMIC_TONE_MAPPING )
-      c.rgb = ACESFilmicToneMapping( c.rgb );
     #elif defined( LINEAR_TONE_MAPPING )
       c.rgb = LinearToneMapping( c.rgb );
     #endif
@@ -194,14 +190,12 @@ function stateFor(bs: BrushScene): State {
 function outputDefines(r: THREE.WebGLRenderer): Record<string, string> {
   const defines: Record<string, string> = {};
   if (r.toneMapping === THREE.CustomToneMapping) defines.CUSTOM_TONE_MAPPING = '';
-  else if (r.toneMapping === THREE.AgXToneMapping) defines.AGX_TONE_MAPPING = '';
-  else if (r.toneMapping === THREE.ACESFilmicToneMapping) defines.ACES_FILMIC_TONE_MAPPING = '';
   else if (r.toneMapping === THREE.LinearToneMapping) defines.LINEAR_TONE_MAPPING = '';
   if (THREE.ColorManagement.getTransfer(r.outputColorSpace) === THREE.SRGBTransfer) defines.SRGB_TRANSFER = '';
   return defines;
 }
 
-/** Tiles, box and passport images follow the stage's look: key colour and intensity, rim lights, tone curve. */
+/** Tiles, box and passport images follow the stage's look: key colour and intensity, rim lights. */
 function syncLook(s: State, bs: BrushScene): void {
   if (s.lookVersion === bs.lookVersion) return;
   s.lookVersion = bs.lookVersion;

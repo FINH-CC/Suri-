@@ -6,7 +6,6 @@ import { METAL, PARITY_RESPONSE, applyFinish, materialResponse, plastic, setMate
 describe('looks', () => {
   it('parity holds the Task 18 render values', () => {
     const p = LOOKS.parity;
-    expect(p.tone).toBe('neutral');
     expect(p.exposure).toBe(1.05);
     expect(p.key.intensity).toBeCloseTo(0.45 * Math.PI, 10);
     expect(p.key.pos).toEqual([-20, 26, 16]);

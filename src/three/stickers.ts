@@ -221,8 +221,12 @@ function decalFor(scene: StickerScene, st: Sticker, textureFor: TextureFor): THR
   const proxy = decalProxy(hit.object as THREE.Mesh, hit.point, size.length() / 2);
   const geo = new DecalGeometry(proxy, hit.point, helper.rotation, size);
   proxy.geometry.dispose();
+  return new THREE.Mesh(geo, stickerMaterial(textureFor(st.t)));
+}
+
+function stickerMaterial(map: THREE.Texture): THREE.MeshStandardMaterial {
   const mat = new THREE.MeshStandardMaterial({
-    map: textureFor(st.t),
+    map,
     transparent: true,
     depthWrite: false,
     polygonOffset: true,
@@ -230,7 +234,26 @@ function decalFor(scene: StickerScene, st: Sticker, textureFor: TextureFor): THR
     roughness: 0.5,
   });
   mat.userData.keepMap = true; // part rebuilds dispose their group's children; the shared texture must survive
-  return new THREE.Mesh(geo, mat);
+  return mat;
+}
+
+/**
+ * Compile the sticker program (and upload one sticker texture) ahead of the first placement, so the first sticker
+ * doesn't pay a shader compile on the click. Uses the stage's lights and shadow setup. The warm material is kept:
+ * disposing it would release the compiled program (three frees a program once no material uses it).
+ */
+let warmMaterial: THREE.MeshStandardMaterial | null = null;
+export async function warmStickerProgram(bs: Pick<BrushScene, 'renderer' | 'camera' | 'scene'>): Promise<void> {
+  const tex = stickerTexture('star');
+  warmMaterial ??= stickerMaterial(tex);
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(0.01, 0.01), warmMaterial);
+  mesh.userData.isSticker = true;
+  try {
+    bs.renderer.initTexture(tex);
+    await bs.renderer.compileAsync(mesh, bs.camera, bs.scene);
+  } finally {
+    mesh.geometry.dispose();
+  }
 }
 
 // Stickers live inside their part's group (in part-local coords) so they move when the brush comes apart.

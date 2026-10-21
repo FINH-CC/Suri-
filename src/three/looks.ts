@@ -2,8 +2,7 @@ import * as THREE from 'three';
 import { PARITY_RESPONSE } from './materials';
 import type { MaterialResponse } from './materials';
 import { PARITY_ENV, PARITY_KEY } from './renderer';
-import type { EnvSpec, KeySpec, Tint, ToneCurve, Vec3 } from './renderer';
-import type { BrushScene } from './scene';
+import type { EnvSpec, KeySpec, Tint, Vec3 } from './renderer';
 
 /*
  * Studio looks. `b` (Product hero, chosen by Alexis in Task 19) is what ships. `parity` is the Task 18 render,
@@ -18,8 +17,7 @@ export const DEFAULT_LOOK: LookId = 'b';
 export type Look = {
   id: LookId;
   name: string;
-  /** Tone curve and exposure of the stage and of every snapshot. */
-  tone: ToneCurve;
+  /** Exposure of the stage and of every snapshot (the tone curve is always the neutral one, src/three/renderer.ts). */
   exposure: number;
   /** The PMREM studio the plastics reflect, and how strongly (scene.environmentIntensity). */
   env: EnvSpec;
@@ -71,7 +69,6 @@ export type Look = {
 const PARITY: Look = {
   id: 'parity',
   name: 'Parity (today)',
-  tone: 'neutral',
   exposure: 1.05,
   env: PARITY_ENV,
   envIntensity: 1,
@@ -142,7 +139,7 @@ const HERO: Look = {
     roughness: 0.92,
     specular: 1.15,
     sheen: 0.45, // velvety silicone edges
-    satin: { roughness: 0.3, clearcoat: 0.45, clearcoatRoughness: 0.08, siliconeClearcoat: 0.12 },
+    satin: { roughness: 0.3, clearcoat: 0.45, clearcoatRoughness: 0.08, siliconeClearcoat: 0 }, // clear coat on hard plastics only
     matteGrain: 0.07,
     silicone: { roughnessAdd: 0.08, sheenRoughness: 0.5 },
     metal: { roughness: 0.16, envMapIntensity: 1.5 },
@@ -153,8 +150,3 @@ const HERO: Look = {
 export const LOOKS: Record<LookId, Look> = { parity: PARITY, b: HERO };
 
 export const isLookId = (v: unknown): v is LookId => typeof v === 'string' && (LOOK_IDS as string[]).includes(v);
-
-/** Apply a look to the stage (and, through the scene, to every later snapshot). */
-export function applyLook(scene: BrushScene, id: LookId): void {
-  scene.setLook(LOOKS[id]);
-}

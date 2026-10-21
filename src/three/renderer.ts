@@ -34,18 +34,10 @@ export const NEUTRAL_TONE_MAPPING = patchToneMapping();
 export function makeRenderer(opts: THREE.WebGLRendererParameters = {}): THREE.WebGLRenderer {
   const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, ...opts });
   r.outputColorSpace = THREE.SRGBColorSpace;
-  r.toneMapping = toneMappingFor('neutral');
+  r.toneMapping = NEUTRAL_TONE_MAPPING ? THREE.CustomToneMapping : THREE.LinearToneMapping;
   r.toneMappingExposure = 1.05;
   r.setClearColor(0, 0);
   return r;
-}
-
-/** Tone curves a look can pick (Task 19). `neutral` is the patched Khronos PBR Neutral above, the parity curve. */
-export type ToneCurve = 'neutral' | 'agx' | 'aces';
-export function toneMappingFor(t: ToneCurve): THREE.ToneMapping {
-  if (t === 'agx') return THREE.AgXToneMapping;
-  if (t === 'aces') return THREE.ACESFilmicToneMapping;
-  return NEUTRAL_TONE_MAPPING ? THREE.CustomToneMapping : THREE.LinearToneMapping;
 }
 
 /* ---------- studio environment ---------- */
