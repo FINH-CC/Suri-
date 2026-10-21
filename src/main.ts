@@ -20,6 +20,8 @@ import { createFlow } from './ui/flow';
 import type { Step } from './ui/flow';
 import * as intro from './ui/intro';
 import { mountDesign } from './ui/design';
+import { mountHandover } from './ui/handover';
+import { mountNameIt } from './ui/nameit';
 import { mountStart } from './ui/start';
 import { toast } from './ui/toast';
 
@@ -153,6 +155,8 @@ async function boot(): Promise<void> {
     unsubs.push(mountStart(st, s));
     wireStage(s, st, flow, ac.signal, unsubs);
     unsubs.push(mountDesign(st, s)); // after wireStage: its canvas tap handler must see `placing` before a placed sticker clears it
+    unsubs.push(mountNameIt(st, s));
+    unsubs.push(mountHandover(st, flow));
     flow.goStep(1);
     s.frameDefault();
     await firstFrame(s);
