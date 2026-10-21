@@ -1,9 +1,14 @@
 # Studio looks (Task 19)
 
+**Shipped: b · Product hero** (chosen by Alexis, Task 19b), with refined materials and a soft VSM floor shadow. Looks a
+and c were removed from the code after the choice; their captures below stay as the record of the comparison. The
+final captures of b are in `docs/reference/final/` (17 shots) with the before/after sheet `docs/reference/final/compare.png`.
+In dev, `?look=parity` still shows the Task 18 render. The `b-*.png` images in this folder are the Task 19 version of b
+(before the 19b material and shadow changes).
+
 Four looks of the same build, Nova and Splash, front and iso: `<look>-<character>-<view>.png` (1200x900 crop of the
 stage at a 2100x1100 viewport, headed Chromium, dev server with `?look=<id>`). `compare.png` puts them side by side
-(columns parity, a, b, c). Rebuild the sheet with `npx tsx scripts/compare-looks.ts`. The parameters of each look are
-in `src/three/looks.ts`. Production renders **parity** until a look is chosen.
+(columns parity, a, b, c). Rebuild the sheet with `npx tsx scripts/compare-looks.ts` (needs all four look captures).
 
 - **parity**: today's render, unchanged (re-captured nova-iso differs from `docs/reference/new/nova-iso.png` by a mean of 0.004 per channel).
 - **a, Soft studio**: a larger, higher softbox and a brighter overhead give a longer top-to-bottom gradient, shadows blur evenly instead of grainy, the contact shadow sits right under the base, and creases get a little more depth, so it reads like a calm studio product shot.
@@ -51,3 +56,39 @@ Idle: 0 frames in 3 s on every look (dev, `__scene.frames`).
 a and b were measured twice. The first run of each had one slow character pick (a 333 ms, b 294 ms) and b one slow
 Name it (1164 ms, a 1161 ms Long Task); neither came back in the second run (above), so they read as one-off shader
 compiles or GC, not a steady cost. Worth one more look on a phone before shipping b.
+
+## Shipped look b (Task 19b)
+
+Changes over the Task 19 b above:
+
+- Floor shadow: VSM, 2048 map, radius 20, 16 blur samples, frustum ±11 / ±17. The floor fades from 0 to 1.8 brush
+  widths from the base, with distances along the shadow's direction counted 1.8x, so the pool never reaches the edge of
+  the shadow map in any view (front, side, back, iso, taken apart) at desktop or phone stage sizes. Without float render
+  targets (no `EXT_color_buffer_float` / `_half_float`) it falls back to PCF, no floor, and a stronger contact pool
+  (.50 / .22).
+- Satin: clear coat .45 at roughness .08 on hard plastics (silicone .12). Matte hard plastics: a roughness grain of
+  ±.07 (value noise, two octaves; colour untouched). Silicone (cap, grip): roughness +.08, sheen .45 at sheen roughness .5.
+  Metal: roughness .16, environment 1.5. Bristles: roughness .68, sheen .5, no clear coat, self-light .06.
+- Cap hue drift against the swatch, final shots: Nova -1.1 to -0.2°, Splash -0.1 to +1.5°, Pip -1.2 to -0.6°,
+  Puff +1.0° (limit 3°; parity was up to +3.2°).
+
+Budgets, production build (`npm run build`, `vite preview`, headed Chromium 1280x900, DPR 1, M5 Pro), two runs,
+median / max ms:
+
+| Interaction (limit) | Run 1 | Run 2 |
+| --- | --- | --- |
+| Cap colour swatch (≤ 50) | 25.9 / 27.7 | 26.1 / 26.8 |
+| Grip tile (≤ 50) | 15.6 / 17.1 | 15.4 / 17.3 |
+| Cap tile (≤ 50) | 27.1 / 28.4 | 26.7 / 27.1 |
+| Head tile (≤ 200) | 40.6 / 42.9 | 37.9 / 40.6 |
+| Head tile, 3 stickers on (≤ 200) | 74.8 / 79.0 | 75.4 / 83.5 |
+| Handle colour, 3 stickers on (≤ 200) | 51.1 / 53.8 | 52.6 / 55.2 |
+| Grip tile, 3 stickers on (≤ 200) | 50.6 / 54.1 | 49.8 / 52.0 |
+| Place a sticker (≤ 200) | 57.3 / 194.6 | 51.7 / 57.4 |
+| Finish (≤ 100) | 15.8 / 35.4 | 15.6 / 33.9 |
+| Pick a character (no budget) | 72.3 / 87.4 | 70.0 / 91.2 |
+| Next: Name it (no budget) | 165.9 | 153.6 |
+
+Size: HTML + CSS + JS 213.1 KB gzip (≤ 350), tiles 108 KB (≤ 400). No frames while idle.
+The first run's first placed sticker took 194.6 ms (one 156 ms Long Task, first compile of the sticker program); it
+did not come back in run 2.

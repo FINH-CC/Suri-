@@ -7,6 +7,8 @@ Vite + TypeScript + three, no UI framework. Static site, deployed to Vercel (tea
 - Design (spec): [docs/superpowers/specs/2026-10-20-configurator-rebuild-design.md](docs/superpowers/specs/2026-10-20-configurator-rebuild-design.md)
 - Plan: [docs/superpowers/plans/2026-10-20-configurator-rebuild.md](docs/superpowers/plans/2026-10-20-configurator-rebuild.md)
 - Parity and budgets: [docs/reference/parity-2026-10.md](docs/reference/parity-2026-10.md)
+- Studio look (shipped: **b · Product hero**): [docs/reference/looks/README.md](docs/reference/looks/README.md),
+  before/after sheet [docs/reference/final/compare.png](docs/reference/final/compare.png)
 
 ## Run
 
@@ -38,6 +40,11 @@ toolbar) shows in both sets. Each shot waits until two consecutive frames are id
 
     npm run build && npx vite preview --port 3242 --strictPort &
     npx tsx scripts/measure-budgets.ts [--stickers 6]           # click-to-paint and Long Tasks
+
+The render's look (lights, studio, shadows, occlusion, material response) lives in `src/three/looks.ts`. Look `b`
+(Product hero) ships; in dev, `?look=parity` shows the Task 18 render for comparison, e.g.
+`npm run capture-reference -- --target new --url 'http://localhost:3240/?look=parity' --out <dir>`.
+`npx tsx scripts/compare-final.ts` rebuilds the before/after sheet from `docs/reference/new` and `docs/reference/final`.
 
 ## Regenerate generated assets
 
