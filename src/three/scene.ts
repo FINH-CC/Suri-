@@ -9,7 +9,8 @@ import { applyFinish } from './materials';
 import type { BrushMeta, CadGeo } from './model';
 import { buildPart, dispose } from './parts/index';
 import type { BuildCtx } from './parts/index';
-import { makeEnv, makeRenderer } from './renderer';
+import { expandByObjectR128 } from './box';
+import { makeEnv, makeKeyLight, makeRenderer } from './renderer';
 import { disposeSnapshots } from './snapshot';
 import { SSAO } from './ssao';
 
@@ -125,8 +126,7 @@ export class BrushScene {
     renderer.shadowMap.autoUpdate = false; // updated once per frame in SSAO.render
     const scene = (this.scene = new THREE.Scene());
     scene.environment = makeEnv(renderer);
-    const key = new THREE.DirectionalLight(0xfff8f0, 0.45);
-    key.position.set(-20, 26, 16);
+    const key = makeKeyLight();
     scene.add(key);
     key.target.position.set(0, 11, 0);
     scene.add(key.target);
@@ -301,7 +301,7 @@ export class BrushScene {
     const bot = bar && !barOnTop ? r.bottom - bar.top + 14 : 16;
     const H = r.height, f = Math.max(0.3, (H - top - bot) / H);
     const box = new THREE.Box3();
-    PARTS.forEach((p) => box.expandByObject(this.groups[p.id]));
+    PARTS.forEach((p) => expandByObjectR128(box, this.groups[p.id]));
     if (box.isEmpty()) return;
     const h = box.max.y - box.min.y, cy = (box.max.y + box.min.y) / 2;
     const t = Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2));
@@ -343,7 +343,7 @@ export class BrushScene {
   private placeContact(): void {
     const cb = this._cb.makeEmpty(), contact = this.contact;
     PARTS.forEach((p) => {
-      if (p.id !== 'mount') cb.expandByObject(this.groups[p.id]);
+      if (p.id !== 'mount') expandByObjectR128(cb, this.groups[p.id]);
     });
     if (cb.isEmpty()) {
       contact.visible = false;

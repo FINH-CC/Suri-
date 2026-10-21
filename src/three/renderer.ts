@@ -71,3 +71,16 @@ export function makeEnv(renderer: THREE.WebGLRenderer): THREE.Texture {
   panel(50, 50, [0, -27, 4], 0.5, [1, 0.95, 0.93]); // warm floor bounce, picks up the stage tint
   return new THREE.PMREMGenerator(renderer).fromScene(env, 0.025).texture;
 }
+
+/**
+ * The studio key light (legacy 1087 / 1123: `DirectionalLight(0xfff8f0, .45)` on r128).
+ * r128 ran lights in legacy mode: a light's irradiance was multiplied by PI, and a hex light colour was used as-is
+ * (no sRGB -> linear). Current three is physically based on both counts, so the same look needs .45 * PI and the
+ * colour taken as linear values. Measured in the Task 18 parity pass: without this every part rendered ~10% darker.
+ */
+export function makeKeyLight(): THREE.DirectionalLight {
+  const colour = new THREE.Color().setRGB(1, 0xf8 / 255, 0xf0 / 255, THREE.LinearSRGBColorSpace);
+  const key = new THREE.DirectionalLight(colour, 0.45 * Math.PI);
+  key.position.set(-20, 26, 16);
+  return key;
+}

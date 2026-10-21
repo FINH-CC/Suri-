@@ -4,6 +4,8 @@ import { PARTS } from '../data/parts';
 import type { PartId } from '../data/parts';
 import type { Design } from '../state/design';
 import { buildPart, dispose } from './parts/index';
+import { expandByObjectR128 } from './box';
+import { makeKeyLight } from './renderer';
 import type { BrushScene } from './scene';
 
 /*
@@ -94,7 +96,7 @@ function frameOrtho(
 /** Leaning three-quarter hero camera (legacy brushHero, 1459-1472). */
 function frameHero(cam: THREE.PerspectiveCamera, g: THREE.Object3D, aspect: number): void {
   g.updateMatrixWorld(true);
-  const box = new THREE.Box3().setFromObject(g), c = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3());
+  const box = expandByObjectR128(new THREE.Box3(), g), c = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3());
   cam.aspect = aspect;
   cam.updateProjectionMatrix();
   const d = new THREE.Vector3(0.35, -0.3, 1).normalize();
@@ -152,8 +154,7 @@ function stateFor(bs: BrushScene): State {
   if (s) return s;
   const scene = new THREE.Scene();
   // legacy thumb key light (1123)
-  const key = new THREE.DirectionalLight(0xfff8f0, 0.45);
-  key.position.set(-20, 26, 16);
+  const key = makeKeyLight();
   scene.add(key);
   const r = bs.renderer;
   const defines: Record<string, string> = {};
