@@ -13,6 +13,9 @@ test.describe('app shell', () => {
     await page.goto('/');
     await expect(page.locator('#intro')).toHaveCount(0, { timeout: BOOT });
     await expect(page.locator('#stage canvas')).toHaveCount(1);
+    // the intro only leaves after the stage has actually drawn (window.__scene is exposed in dev only)
+    const frames = await page.evaluate(() => (window as unknown as { __scene?: { frames: number } }).__scene?.frames ?? 0);
+    expect(frames).toBeGreaterThan(0);
     await expect(page.locator('#step-1')).toBeVisible();
     await expect(page.locator('#chars .char')).toHaveCount(5);
     expect(errors).toEqual([]);
@@ -26,6 +29,9 @@ test.describe('app shell', () => {
     await expect(intro).toContainText("Couldn't load the brush", { timeout: BOOT });
     const retry = intro.getByRole('button', { name: 'Retry' });
     await expect(retry).toBeVisible();
+    // a load failure belongs to the intro, not the global "something went wrong" toast
+    await expect(page.locator('#toast')).not.toHaveClass(/show/);
+    await expect(page.locator('#toast')).not.toContainText('Something went wrong');
     await page.unroute('**/model/brush.glb');
     await retry.click();
     await expect(intro).toHaveCount(0, { timeout: BOOT });

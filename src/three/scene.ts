@@ -75,8 +75,10 @@ export class BrushScene {
   uploads: BuildCtx['uploads'] = {};
   /** Task 10: re-project stickers after parts were rebuilt or the sticker list changed. */
   onPartsChanged?: (d: Design) => void;
-  /** Frames rendered (diagnostics / idle check). */
+  /** Frames rendered (diagnostics / idle check / first-frame gate). */
   frames = 0;
+  /** The last error thrown by the frame loop, if any. */
+  lastError: unknown = null;
 
   private readonly stage: HTMLElement;
   private readonly cad: CadGeo;
@@ -396,12 +398,19 @@ export class BrushScene {
 
   requestFrame(): void {
     if (this.raf) return;
-    this.raf = requestAnimationFrame(() => this.frame());
+    this.raf = requestAnimationFrame(() => {
+      try {
+        this.frame();
+      } catch (e) {
+        this.raf = 0;
+        this.lastError = e; // boot's firstFrame() routes a first-render failure to the intro error
+        throw e;
+      }
+    });
   }
 
   private frame(): void {
     this.raf = 0;
-    this.frames++;
     const G = this.groups, rm = this.reduceMotion;
     const tgt = this.capLift && !this.exploded ? 3.2 : 0;
     this.lift = rm ? tgt : this.lift + (tgt - this.lift) * 0.12;
@@ -435,6 +444,7 @@ export class BrushScene {
     const damping = this.controls.update();
     this.placeContact();
     this.ssao.render(this.scene, this.camera);
+    this.frames++; // counted only once the frame has actually rendered
     if (damping || this.camTo || popping || this.ex !== et || this.lift !== tgt) this.requestFrame();
   }
 

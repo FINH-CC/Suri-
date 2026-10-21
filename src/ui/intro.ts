@@ -5,7 +5,8 @@
 const started = performance.now();
 const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const el = () => document.getElementById('intro');
-let original = '';
+// captured at module load so a restored loader never carries progress state from the failed attempt
+const original = el()?.querySelector('.intro-inner')?.innerHTML ?? '';
 let finishing = false;
 
 /** Loaded bytes so far; `total` 0 (unknown length) creeps to 90% and holds. */
@@ -46,7 +47,6 @@ export function fail(err: unknown, retry: () => void): void {
   if (!intro) return;
   const inner = intro.querySelector<HTMLElement>('.intro-inner');
   if (!inner) return;
-  if (!original) original = inner.innerHTML;
   finishing = false;
   inner.innerHTML = '';
   const h = document.createElement('h2');

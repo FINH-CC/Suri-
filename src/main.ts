@@ -89,8 +89,10 @@ function wireStage(s: BrushScene, st: Store, flow: Flow, signal: AbortSignal, un
   let down: { x: number; y: number } | null = null;
   canvas.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY }; }, on);
   canvas.addEventListener('pointerup', (e) => {
-    if (!down || e.button !== 0 || stage.classList.contains('placing')) return;
-    if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5) return;
+    const start = down;
+    down = null;
+    if (!start || e.button !== 0 || stage.classList.contains('placing')) return;
+    if (Math.hypot(e.clientX - start.x, e.clientY - start.y) > 5) return;
     const id: PartId | null = s.partAt(e.clientX, e.clientY);
     if (!id) return;
     flow.goStep(2);
@@ -105,6 +107,22 @@ function wireStage(s: BrushScene, st: Store, flow: Flow, signal: AbortSignal, un
 
 // Created once: the step sections and bottom bar exist before the brush loads. Task 13-15 hook their screens in here.
 const flow: Flow = createFlow({ onEnter: (_step: Step) => {} });
+
+/** Resolve once the scene has rendered a frame; reject on a frame-loop error or after 10 s with nothing drawn. */
+function firstFrame(s: BrushScene, timeoutMs = 10_000): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const t0 = performance.now();
+    s.lastError = null;
+    s.requestFrame();
+    const poll = () => {
+      if (s.lastError) return reject(s.lastError);
+      if (s.frames > 0) return resolve();
+      if (performance.now() - t0 > timeoutMs) return reject(new Error('No frame rendered'));
+      requestAnimationFrame(poll);
+    };
+    requestAnimationFrame(poll);
+  });
+}
 
 async function boot(): Promise<void> {
   const ac = new AbortController();
@@ -135,7 +153,8 @@ async function boot(): Promise<void> {
     wireStage(s, st, flow, ac.signal, unsubs);
     flow.goStep(1);
     s.frameDefault();
-    s.requestFrame();
+    await firstFrame(s);
+    if (import.meta.env.DEV) (window as unknown as { __scene?: BrushScene }).__scene = s;
     intro.finish();
   } catch (err) {
     ac.abort(); // undo any half-finished mount so Retry starts clean
