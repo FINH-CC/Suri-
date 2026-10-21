@@ -107,7 +107,7 @@ export class BrushScene {
   private readonly onDpr = () => {
     this.watchDpr();
     this.resize();
-    this.requestFrame();
+    this.invalidateShadows();
   };
   private design: Design | null = null;
   private readonly raycaster = new THREE.Raycaster();
@@ -126,6 +126,9 @@ export class BrushScene {
   private pops: Partial<Record<PartId, { t0: number }>> = {};
   private popReady = false;
   private raf = 0;
+  /** The key light's shadow map is redrawn only on frames where what casts or receives it changed (or moved). */
+  private shadowsDirty = true;
+  private lastPose = '';
   private uploadCap: { geo: THREE.BufferGeometry; core: CapCore } | null = null;
   private readonly _cb = new THREE.Box3();
 
@@ -149,7 +152,7 @@ export class BrushScene {
     stage.prepend(renderer.domElement);
     // soft shadows: the brush shades the mount behind it, parts shade each other where they meet
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.autoUpdate = false; // updated once per frame in SSAO.render
+    renderer.shadowMap.autoUpdate = false; // redrawn only when content changed (shadowsDirty), plain orbit frames reuse it
     const ext = renderer.extensions;
     this.vsmSupported = ext.has('EXT_color_buffer_float') || ext.has('EXT_color_buffer_half_float');
     const scene = (this.scene = new THREE.Scene());
@@ -217,7 +220,7 @@ export class BrushScene {
     this.ro = new ResizeObserver(() => {
       this.resize();
       if (!this.userMoved) this.frameDefault();
-      this.requestFrame();
+      this.invalidateShadows();
     });
     this.ro.observe(stage);
     this.resize();
@@ -245,6 +248,12 @@ export class BrushScene {
     if (ids.length || !prev || JSON.stringify(prev.stickers) !== JSON.stringify(next.stickers)) this.onPartsChanged?.(next);
     ids.forEach((id) => this.popPart(id));
     if (!prev) setTimeout(() => (this.popReady = true), 400);
+    this.invalidateShadows(); // part rebuilds, finish swaps and sticker changes all arrive here
+  }
+
+  /** Redraw the shadow map on the next frame (call after changing anything that casts or receives the key shadow). */
+  invalidateShadows(): void {
+    this.shadowsDirty = true;
     this.requestFrame();
   }
 
@@ -366,6 +375,7 @@ export class BrushScene {
     const rebuild = prev.material !== look.material || prev.env !== look.env || prev.envIntensity !== look.envIntensity;
     if (!first && rebuild && this.design) this.rebuildAll(this.design);
     this.resize();
+    this.shadowsDirty = true;
     if (!first) this.requestFrame();
   }
 
@@ -603,7 +613,12 @@ export class BrushScene {
     }
     const damping = this.controls.update();
     this.placeContact();
-    this.ssao.render(this.scene, this.camera);
+    // parts that moved (take apart, cap lift, pops) move their shadows; camera-only frames keep the last map
+    const pose = popping ? `pop${now}` : `${ex}|${this.lift}`;
+    if (pose !== this.lastPose) this.shadowsDirty = true;
+    this.lastPose = pose;
+    this.ssao.render(this.scene, this.camera, this.shadowsDirty);
+    this.shadowsDirty = false;
     this.frames++; // counted only once the frame has actually rendered
     if (damping || this.camTo || popping || this.ex !== et || this.lift !== tgt) this.requestFrame();
   }

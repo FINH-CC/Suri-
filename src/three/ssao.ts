@@ -144,8 +144,11 @@ export class SSAO {
     this.aoBlurMat.uniforms.texel.value.set(1 / w, 1 / h);
   }
 
-  /** Legacy renderReal: normals+depth, half-res occlusion, the lit product, then the blurred occlusion on top. */
-  render(scene: THREE.Scene, camera: THREE.PerspectiveCamera): void {
+  /**
+   * Legacy renderReal: normals+depth, half-res occlusion, the lit product, then the blurred occlusion on top.
+   * `updateShadows` redraws the shadow map with the lit pass; otherwise the last map is reused (camera-only frames).
+   */
+  render(scene: THREE.Scene, camera: THREE.PerspectiveCamera, updateShadows = true): void {
     const renderer = this.renderer;
     this.ensureTargets();
     this.ensureAO();
@@ -181,7 +184,7 @@ export class SSAO {
     // 3) the lit product, then the blurred occlusion multiplied on top
     renderer.setRenderTarget(null);
     renderer.setClearColor(this.clear, clearA);
-    renderer.shadowMap.needsUpdate = true;
+    renderer.shadowMap.needsUpdate = updateShadows;
     renderer.render(scene, camera);
     this.aoBlurMat.uniforms.tAO.value = rtAO.texture;
     renderer.autoClear = false;
