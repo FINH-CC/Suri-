@@ -1,0 +1,9 @@
+# Vercel builds from source (npm run build -> dist); none of this is needed for that
+legacy
+docs
+tests
+test-results
+playwright-report
+.superpowers
+.env*
+dist
