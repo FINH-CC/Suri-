@@ -212,6 +212,7 @@ function syncLook(s: State, bs: BrushScene): void {
     const d = l as THREE.DirectionalLight;
     if (!d.isDirectionalLight) return;
     const c = d.clone();
+    c.target.position.copy(d.target.position); // same aim as the stage's rim (direction is all a directional light has)
     s.rims.add(c, c.target);
   });
   const d = outputDefines(bs.renderer);

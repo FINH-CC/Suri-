@@ -37,3 +37,9 @@ describe('shader string patches', () => {
     expect(THREE.ShaderLib.physical.vertexShader).toContain('#include <begin_vertex>');
   });
 });
+
+describe('matte grain patch', () => {
+  it('its replace target exists in the physical shader', () => {
+    expect(THREE.ShaderLib.physical.fragmentShader).toContain('#include <roughnessmap_fragment>');
+  });
+});

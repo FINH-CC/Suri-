@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { INK, lin, lum, mixHex, plastic, speckle } from '../materials';
+import { INK, lin, lum, materialResponse, mixHex, plastic, speckle } from '../materials';
 import { cadMesh } from '../model';
 import { sphere, type BuildCtx } from './context';
 
@@ -15,16 +15,19 @@ export function buildHead(s: string, hex: string, ctx: BuildCtx): THREE.Group {
   const tg = new THREE.LatheGeometry(prof.map(([r, y]) => new THREE.Vector2(r, y)), 18);
   tg.rotateX(Math.PI / 2); // grows along +z
   // r128 `sheen: Color(.35,.35,.35)` -> sheen .35 on a white sheenColor; r128 sheen used the material roughness
+  // the active look's bristle response (parity: roughness .55, sheen .35, clear coat .15, no lift)
+  const br = materialResponse().bristle;
   const fil = new THREE.MeshPhysicalMaterial({
     color: 0xffffff,
-    roughness: 0.55,
+    roughness: br.roughness,
     metalness: 0,
-    sheen: 0.35,
+    sheen: br.sheen,
     sheenColor: new THREE.Color(1, 1, 1),
-    sheenRoughness: 0.55,
-    clearcoat: 0.15,
+    sheenRoughness: br.roughness,
+    clearcoat: br.clearcoat,
     clearcoatRoughness: 0.5,
   });
+  if (br.lift > 0) fil.emissive.setScalar(br.lift);
   const tufts = new THREE.InstancedMesh(tg, fil, T.length);
   // trim profile: a gentle dome, longest at the centre of the pad; the outer ring is tinted from the head colour
   const cx = T.reduce((a, t) => a + t[0], 0) / T.length;

@@ -13,9 +13,8 @@ import type { Design } from './state/design';
 import { createStore } from './state/store';
 import type { Store } from './state/store';
 import type { CapCore } from './three/capfit';
-import { applyLook, isLookId } from './three/looks';
+import { DEFAULT_LOOK, LOOKS, isLookId } from './three/looks';
 import type { LookId } from './three/looks';
-import type { ToneCurve } from './three/renderer';
 import { loadModel } from './three/model';
 import { BrushScene } from './three/scene';
 import { projectStickers } from './three/stickers';
@@ -61,22 +60,11 @@ function setAccent(d: Design) {
   r.setProperty('--accent-deep', mixHex(c, '#252525', 0.22));
 }
 
-/**
- * The studio look (Task 19). Production renders `parity` until Alexis picks a look. Dev only: `?look=a|b|c` switches
- * the stage and every snapshot, `&tone=agx|aces|neutral` overrides the tone curve (for the tone-curve evaluation).
- * `VITE_LOOK` at build time picks a look for a measurement build (budgets per look); unset, it is `parity`.
- */
-function lookFromEnv(): { id: LookId; tone?: ToneCurve } | null {
-  if (import.meta.env.DEV) {
-    const q = new URLSearchParams(location.search), id = q.get('look'), tone = q.get('tone');
-    if (!q.has('look') && !q.has('tone')) return null;
-    return {
-      id: isLookId(id) ? id : 'parity',
-      tone: tone === 'agx' || tone === 'aces' || tone === 'neutral' ? tone : undefined,
-    };
-  }
-  const id = import.meta.env.VITE_LOOK as string | undefined;
-  return isLookId(id) && id !== 'parity' ? { id } : null;
+/** The studio look: `b` ships (Task 19b). Dev only: `?look=parity` shows the Task 18 render for comparison. */
+function lookFromUrl(): LookId {
+  if (!import.meta.env.DEV) return DEFAULT_LOOK;
+  const id = new URLSearchParams(location.search).get('look');
+  return isLookId(id) ? id : DEFAULT_LOOK;
 }
 
 type Flow = ReturnType<typeof createFlow>;
@@ -179,9 +167,7 @@ async function boot(): Promise<void> {
         return r.json() as Promise<Record<string, CapCore>>;
       }),
     ]);
-    const s = (scene = new BrushScene(document.getElementById('stage')!, model, capFit));
-    const look = lookFromEnv();
-    if (look) applyLook(s, look.id, look.tone ? { tone: look.tone } : undefined); // before the first build: no rebuild
+    const s = (scene = new BrushScene(document.getElementById('stage')!, model, capFit, LOOKS[lookFromUrl()]));
     s.onPartsChanged = (d) => projectStickers(s, d.stickers);
     s.applyDesign(st.get(), null);
     setAccent(st.get());

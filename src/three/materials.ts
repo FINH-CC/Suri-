@@ -26,19 +26,32 @@ export function surfaceColour(hex: string): THREE.Color {
  * - `roughness`: multiplies every plastic's roughness (1 = as authored).
  * - `specular`: specularIntensity of the plastics (dielectric reflectance at normal incidence, 1 = from the ior).
  * - `sheen`: the silicone parts' grazing sheen.
- * - `satin`: the Satin finish (roughness, clear coat, clear coat roughness).
+ * - `satin`: the Satin finish (roughness, clear coat, clear coat roughness); silicone parts take `siliconeClearcoat`.
+ * - `matteGrain`: amplitude of a faint roughness variation on Matte hard plastics (0 = none). Roughness only, never colour.
+ * - `silicone`: roughness added to the silicone parts (cap, grip) and their sheen roughness (null = follows roughness).
+ * - `metal`: roughness and environment strength of the metal parts.
+ * - `bristle`: the filament material (roughness, sheen, clear coat) and `lift`, a faint self-light that lightens and
+ *   flattens their shading (a translucency feel without a transmission pass).
  */
 export type MaterialResponse = {
   roughness: number;
   specular: number;
   sheen: number;
-  satin: { roughness: number; clearcoat: number; clearcoatRoughness: number };
+  satin: { roughness: number; clearcoat: number; clearcoatRoughness: number; siliconeClearcoat: number };
+  matteGrain: number;
+  silicone: { roughnessAdd: number; sheenRoughness: number | null };
+  metal: { roughness: number; envMapIntensity: number };
+  bristle: { roughness: number; sheen: number; clearcoat: number; lift: number };
 };
 export const PARITY_RESPONSE: MaterialResponse = {
   roughness: 1,
   specular: 1,
   sheen: 0.32,
-  satin: { roughness: 0.36, clearcoat: 0.3, clearcoatRoughness: 0.28 },
+  satin: { roughness: 0.36, clearcoat: 0.3, clearcoatRoughness: 0.28, siliconeClearcoat: 0.3 },
+  matteGrain: 0,
+  silicone: { roughnessAdd: 0, sheenRoughness: null },
+  metal: { roughness: 0.3, envMapIntensity: 1 },
+  bristle: { roughness: 0.55, sheen: 0.35, clearcoat: 0.15, lift: 0 },
 };
 let response: MaterialResponse = PARITY_RESPONSE;
 export const setMaterialResponse = (r: MaterialResponse): void => {
@@ -66,10 +79,12 @@ export const plastic = (hex: string, o: THREE.MeshPhysicalMaterialParameters = {
     ior: 1.326, // r128 reflectivity .35: F0 = 0.16 * .35^2 = 0.0196 -> ior (1 + 0.14) / (1 - 0.14)
     ...o,
   });
+  const silicone = m.sheen > 0;
+  if (silicone && response.silicone.roughnessAdd) m.roughness = Math.min(1, m.roughness + response.silicone.roughnessAdd);
   if (response.roughness !== 1) m.roughness = Math.min(1, m.roughness * response.roughness);
   if (response.specular !== 1) m.specularIntensity = response.specular;
   // r128 sheen used the material's own roughness; current three has a separate sheenRoughness (default 1)
-  if (m.sheen > 0 && o.sheenRoughness === undefined) m.sheenRoughness = m.roughness;
+  if (silicone && o.sheenRoughness === undefined) m.sheenRoughness = response.silicone.sheenRoughness ?? m.roughness;
   return m;
 };
 
@@ -94,22 +109,55 @@ export function speckle<M extends THREE.Material>(mat: M): M {
   return mat;
 }
 
+/**
+ * Matte hard plastic: a faint, smooth variation in roughness (two octaves of value noise from object position, CAD
+ * has no UVs), so large flat areas catch the light a little unevenly, like moulded plastic. Colour is untouched.
+ */
+export function grain<M extends THREE.Material>(mat: M, amp: number): M {
+  mat.onBeforeCompile = (sh) => {
+    sh.vertexShader =
+      'varying vec3 vGrainPos;\n' +
+      sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vGrainPos=position;');
+    sh.fragmentShader =
+      `varying vec3 vGrainPos;
+      float gH(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
+      float gN(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+        return mix(mix(mix(gH(i),gH(i+vec3(1,0,0)),f.x),mix(gH(i+vec3(0,1,0)),gH(i+vec3(1,1,0)),f.x),f.y),
+                   mix(mix(gH(i+vec3(0,0,1)),gH(i+vec3(1,0,1)),f.x),mix(gH(i+vec3(0,1,1)),gH(i+vec3(1,1,1)),f.x),f.y),f.z);}
+      ` +
+      sh.fragmentShader.replace(
+        '#include <roughnessmap_fragment>',
+        `#include <roughnessmap_fragment>
+      roughnessFactor=clamp(roughnessFactor+${amp.toFixed(4)}*((gN(vGrainPos*2.)-.5)+.5*(gN(vGrainPos*9.)-.5)),.04,1.);`,
+      );
+  };
+  mat.customProgramCacheKey = () => `grain${amp}`;
+  return mat;
+}
+
 /** The chosen finish, applied to the main plastic of handle, cap, grip and mount. */
 export function applyFinish(m: THREE.MeshPhysicalMaterial, finish: FinishId): THREE.MeshPhysicalMaterial {
   // pre-finish values, kept so a finish-only change can re-finish the material without rebuilding (scene.refinish)
   m.userData.finishable = true;
   m.userData.base ??= { roughness: m.roughness, clearcoat: m.clearcoat, clearcoatRoughness: m.clearcoatRoughness, sheenRoughness: m.sheenRoughness };
+  const silicone = m.sheen > 0;
   if (finish === 'satin') {
     const s = response.satin;
-    m.roughness = s.roughness;
-    m.clearcoat = s.clearcoat;
+    m.roughness = silicone ? Math.min(1, s.roughness + response.silicone.roughnessAdd) : s.roughness;
+    m.clearcoat = silicone ? s.siliconeClearcoat : s.clearcoat;
     m.clearcoatRoughness = s.clearcoatRoughness;
-    if (m.sheen > 0) m.sheenRoughness = s.roughness; // sheen follows the live roughness, as in r128
+    if (silicone) m.sheenRoughness = response.silicone.sheenRoughness ?? m.roughness; // sheen follows the live roughness, as in r128
   } else if (finish === 'speckle') speckle(m);
+  else if (finish === 'matte' && !silicone && response.matteGrain > 0) grain(m, response.matteGrain);
   return m;
 }
 
 export const INK = '#252525';
 export const METAL = (): THREE.MeshStandardMaterial =>
-  new THREE.MeshStandardMaterial({ color: lin('#c9c9c6'), metalness: 0.9, roughness: 0.3 });
+  new THREE.MeshStandardMaterial({
+    color: lin('#c9c9c6'),
+    metalness: 0.9,
+    roughness: response.metal.roughness,
+    envMapIntensity: response.metal.envMapIntensity,
+  });
 export const GREY = (): THREE.MeshPhysicalMaterial => plastic('#bdbcbb', { roughness: 0.7, clearcoat: 0 });

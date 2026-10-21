@@ -96,7 +96,19 @@ export class BrushScene {
   private readonly ssao: SSAO;
   private readonly contact: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
   private readonly ground: THREE.Mesh<THREE.PlaneGeometry, THREE.ShadowMaterial>;
-  private readonly groundFade = { value: new THREE.Vector2(4, 14) };
+  private floor: Look['ground'] = null;
+  /** Floor fade: start and end distance (world units, set per frame from the brush width) and the along-light stretch. */
+  private readonly groundFade = { value: new THREE.Vector3(0, 4, 1) };
+  /** The shadow's direction on the floor, in the floor plane's local xy. */
+  private readonly groundDir = { value: new THREE.Vector2(1, 0) };
+  /** False where the GPU cannot render the float targets VSM needs: such looks fall back to PCF and the contact pool. */
+  readonly vsmSupported: boolean;
+  private dprQuery: MediaQueryList | null = null;
+  private readonly onDpr = () => {
+    this.watchDpr();
+    this.resize();
+    this.requestFrame();
+  };
   private design: Design | null = null;
   private readonly raycaster = new THREE.Raycaster();
   private readonly reduceMotion: boolean;
@@ -117,7 +129,12 @@ export class BrushScene {
   private uploadCap: { geo: THREE.BufferGeometry; core: CapCore } | null = null;
   private readonly _cb = new THREE.Box3();
 
-  constructor(stage: HTMLElement, model: { cad: CadGeo; meta: BrushMeta }, capFit: Record<string, CapCore>) {
+  constructor(
+    stage: HTMLElement,
+    model: { cad: CadGeo; meta: BrushMeta },
+    capFit: Record<string, CapCore>,
+    look: Look = LOOKS.parity,
+  ) {
     this.stage = stage;
     this.cad = model.cad;
     this.meta = model.meta;
@@ -133,6 +150,8 @@ export class BrushScene {
     // soft shadows: the brush shades the mount behind it, parts shade each other where they meet
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.autoUpdate = false; // updated once per frame in SSAO.render
+    const ext = renderer.extensions;
+    this.vsmSupported = ext.has('EXT_color_buffer_float') || ext.has('EXT_color_buffer_half_float');
     const scene = (this.scene = new THREE.Scene());
     // environment, exposure, tone curve, key light values and shadow softness come from the look (setLook, below)
     const key = (this.key = makeKeyLight());
@@ -172,22 +191,28 @@ export class BrushScene {
       new THREE.ShadowMaterial({ transparent: true, depthWrite: false, opacity: 0 }),
     );
     // the floor's shadow fades out with distance from the base, so it never ends on the shadow camera's edge
+    // the floor's shadow fades out close to the base (sooner along the shadow's direction), so it never reaches the
+    // edge of the shadow map, whatever the view or stage size
     this.ground.material.onBeforeCompile = (sh) => {
       sh.uniforms.fade = this.groundFade;
+      sh.uniforms.fadeDir = this.groundDir;
       sh.vertexShader =
         'varying vec2 vGround;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vGround = position.xy;');
       sh.fragmentShader =
-        'uniform vec2 fade;\nvarying vec2 vGround;\n' +
+        'uniform vec3 fade;\nuniform vec2 fadeDir;\nvarying vec2 vGround;\n' +
         sh.fragmentShader.replace(
           'gl_FragColor = vec4( color, opacity * ( 1.0 - getShadowMask() ) );',
-          'gl_FragColor = vec4( color, opacity * ( 1.0 - getShadowMask() ) * ( 1.0 - smoothstep( fade.x, fade.y, length( vGround ) ) ) );',
+          `float gd = length( vec2( dot( vGround, fadeDir ) * fade.z, dot( vGround, vec2( -fadeDir.y, fadeDir.x ) ) ) );
+  gl_FragColor = vec4( color, opacity * ( 1.0 - getShadowMask() ) * ( 1.0 - smoothstep( fade.x, fade.y, gd ) ) );`,
         );
     };
     this.ground.rotation.x = -Math.PI / 2;
     this.ground.receiveShadow = true;
     this.ground.visible = false;
     scene.add(this.ground);
-    this.setLook(LOOKS.parity);
+    this.look = look;
+    this.setLook(look);
+    this.watchDpr();
 
     this.ro = new ResizeObserver(() => {
       this.resize();
@@ -291,7 +316,16 @@ export class BrushScene {
     setKeyLight(key, look.key);
     // shadows: three recompiles the materials when the map type changes; a new size needs a fresh map
     const sh = look.shadow;
-    r.shadowMap.type = sh.type;
+    const vsm = sh.type === THREE.VSMShadowMap && this.vsmSupported;
+    const type = sh.type === THREE.VSMShadowMap && !vsm ? THREE.PCFShadowMap : sh.type;
+    if (r.shadowMap.type === THREE.VSMShadowMap && type !== THREE.VSMShadowMap) {
+      // leaving VSM: its blur target is not used by PCF
+      key.shadow.mapPass?.dispose();
+      key.shadow.mapPass = null;
+      key.shadow.map?.dispose();
+      key.shadow.map = null;
+    }
+    r.shadowMap.type = type;
     if (key.shadow.mapSize.x !== sh.mapSize) {
       key.shadow.mapSize.set(sh.mapSize, sh.mapSize);
       key.shadow.map?.dispose();
@@ -313,21 +347,20 @@ export class BrushScene {
       this.extraLights.add(d, d.target);
     }
     // contact shadow and shadow-catching floor
-    this.drawContact(look.contact.alpha);
-    this.ground.visible = !!look.ground;
-    this.ground.material.opacity = look.ground?.opacity ?? 0;
-    if (look.ground) this.groundFade.value.set(...look.ground.fade);
+    // the floor shadow needs VSM's soft edge; without it the contact pool carries the grounding alone
+    this.floor = vsm ? look.ground : null;
+    this.drawContact(this.floor || !look.ground ? look.contact.alpha : look.contact.fallbackAlpha);
+    this.ground.visible = !!this.floor;
+    this.ground.material.opacity = this.floor?.opacity ?? 0;
+    const lx = 0 - look.key.pos[0], lz = 0 - look.key.pos[2]; // the key aims at the y axis
+    this.groundDir.value.set(lx, -lz).normalize(); // world xz -> the floor plane's local xy (rotated -90deg about x)
     this.ssao.set(look.ssao);
-    const dpr = typeof devicePixelRatio === 'number' ? devicePixelRatio : 1;
-    r.setPixelRatio(Math.min(Math.max(dpr, look.pixelRatio[0]), look.pixelRatio[1]));
     if (!first && prev.material !== look.material) {
       setMaterialResponse(look.material);
       if (this.design) this.rebuildAll(this.design);
     } else setMaterialResponse(look.material);
-    if (!first) {
-      this.resize();
-      this.requestFrame();
-    }
+    this.resize();
+    if (!first) this.requestFrame();
   }
 
   private rebuildAll(d: Design): void {
@@ -369,9 +402,23 @@ export class BrushScene {
 
   /* ---------- framing (legacy 1855-1878) ---------- */
 
+  /** Follow DPR changes (a window dragged to another screen, browser zoom): no resize event fires for those. */
+  private watchDpr(): void {
+    this.dprQuery?.removeEventListener('change', this.onDpr);
+    if (typeof matchMedia !== 'function' || typeof devicePixelRatio !== 'number') return;
+    this.dprQuery = matchMedia(`(resolution: ${devicePixelRatio}dppx)`);
+    this.dprQuery.addEventListener('change', this.onDpr, { once: true });
+  }
+
   private resize(): void {
     const w = this.stage.clientWidth, h = this.stage.clientHeight;
     if (!w || !h) return;
+    // pixel ratio: the look's clamp of the current DPR, and never a canvas larger than the GPU's max texture size
+    const r = this.renderer, max = r.capabilities.maxTextureSize || 4096;
+    const dpr = typeof devicePixelRatio === 'number' && devicePixelRatio > 0 ? devicePixelRatio : 1;
+    const [lo, hi] = this.look.pixelRatio;
+    const pr = Math.min(Math.max(dpr, lo), hi, max / w, max / h);
+    if (r.getPixelRatio() !== pr) r.setPixelRatio(pr);
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.fov = w / h < 0.8 ? 38 : 28;
@@ -454,9 +501,11 @@ export class BrushScene {
     const spread = 1 + 0.45 * this.ex + 0.08 * (this.lift / 3.2);
     contact.scale.set(w * lc.scale * spread, w * lc.scale * spread, 1);
     contact.material.opacity = 1 - 0.38 * this.ex - 0.1 * (this.lift / 3.2);
-    if (this.look.ground) {
+    if (this.floor) {
       this.ground.visible = true;
       this.ground.position.set(contact.position.x, cb.min.y - lc.drop - 0.01, contact.position.z);
+      // fade distances in brush widths, so the pool scales with the brush (and spreads with it when taken apart)
+      this.groundFade.value.set(this.floor.fade[0] * w, this.floor.fade[1] * w, this.floor.stretch);
     }
   }
 
@@ -557,9 +606,17 @@ export class BrushScene {
     cancelAnimationFrame(this.raf);
     this.raf = 0;
     this.ro.disconnect();
+    this.dprQuery?.removeEventListener('change', this.onDpr);
     this.controls.dispose();
     PARTS.forEach((p) => this.groups[p.id].children.forEach((c) => dispose(c)));
     disposeSnapshots(this);
+    this.ground.geometry.dispose();
+    this.ground.material.dispose();
+    this.contact.geometry.dispose();
+    this.contact.material.map?.dispose();
+    this.contact.material.dispose();
+    this.scene.environment?.dispose();
+    this.key.shadow.dispose();
     this.renderer.dispose();
   }
 }
