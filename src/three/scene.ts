@@ -293,6 +293,12 @@ export class BrushScene {
     g.add(part);
   }
 
+  /** Hop a part on demand (tapping it); no-op under reduced motion, like the change pops. */
+  pop(id: PartId): void {
+    this.popPart(id);
+    this.requestFrame();
+  }
+
   private popPart(id: PartId): void {
     if (!this.popReady || this.reduceMotion) return;
     this.pops[id] = { t0: performance.now() };

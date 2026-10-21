@@ -23,6 +23,8 @@
 
   .tb-main{height:32px;padding:0 14px}
   .seg button{height:26px;padding:0 10px}
+  .undo{width:32px;height:32px}
+  .undo.redo{left:56px}
 
   .info{padding-top:8px}
   .steps{position:static}

@@ -122,6 +122,7 @@ function wireStage(s: BrushScene, st: Store, flow: Flow, signal: AbortSignal, un
     if (Math.hypot(e.clientX - start.x, e.clientY - start.y) > 5) return;
     const id: PartId | null = s.partAt(e.clientX, e.clientY);
     if (!id) return;
+    s.pop(id);
     flow.goStep(2);
     const card = document.getElementById('card-' + id);
     if (!card) return;
@@ -129,6 +130,16 @@ function wireStage(s: BrushScene, st: Store, flow: Flow, signal: AbortSignal, un
     card.classList.remove('flash');
     void card.offsetWidth;
     card.classList.add('flash');
+  }, on);
+
+  // pointer cursor over a part (mouse only; throttled to one hit-test per 90 ms; legacy 1258-1261)
+  let hoverT = 0;
+  canvas.addEventListener('pointermove', (e) => {
+    if (e.pointerType === 'touch' || e.buttons || stage.classList.contains('placing')) return;
+    const n = performance.now();
+    if (n - hoverT < 90) return;
+    hoverT = n;
+    canvas.style.cursor = s.partAt(e.clientX, e.clientY) ? 'pointer' : '';
   }, on);
 }
 
