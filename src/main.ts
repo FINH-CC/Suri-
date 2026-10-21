@@ -167,7 +167,7 @@ async function boot(): Promise<void> {
       setAccent(next);
     }));
 
-    unsubs.push(mountStart(st, s));
+    unsubs.push(mountStart(st));
     wireStage(s, st, flow, ac.signal, unsubs);
     unsubs.push(mountDesign(st, s)); // after wireStage: its canvas tap handler must see `placing` before a placed sticker clears it
     unsubs.push(mountNameIt(st, s));
