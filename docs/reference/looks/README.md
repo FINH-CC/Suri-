@@ -66,9 +66,10 @@ Changes over the Task 19 b above:
   the shadow map in any view (front, side, back, iso, taken apart) at desktop or phone stage sizes. Without float render
   targets (no `EXT_color_buffer_float` / `_half_float`) it falls back to PCF, no floor, and a stronger contact pool
   (.50 / .22).
-- Satin: clear coat .45 at roughness .08 on hard plastics (silicone .12). Matte hard plastics: a roughness grain of
+- Satin: clear coat .45 at roughness .08 on hard plastics (none on silicone). Matte hard plastics: a roughness grain of
   ±.07 (value noise, two octaves; colour untouched). Silicone (cap, grip): roughness +.08, sheen .45 at sheen roughness .5.
-  Metal: roughness .16, environment 1.5. Bristles: roughness .68, sheen .5, no clear coat, self-light .06.
+  Metal: roughness .16, environment 1.5 (the metal material carries the studio map itself; three overrides the
+  strength of materials without one). Bristles: roughness .68, sheen .5, no clear coat, self-light .06.
 - Cap hue drift against the swatch, final shots: Nova -1.1 to -0.2°, Splash -0.1 to +1.5°, Pip -1.2 to -0.6°,
   Puff +1.0° (limit 3°; parity was up to +3.2°).
 
