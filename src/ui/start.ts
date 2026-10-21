@@ -2,7 +2,6 @@ import { CHARACTERS } from '../data/characters';
 import type { CharacterId } from '../data/characters';
 import type { Design } from '../state/design';
 import type { Store } from '../state/store';
-import type { BrushScene } from '../three/scene';
 
 const IDS = Object.keys(CHARACTERS) as CharacterId[]; // pip, puff, splash, nova, blank
 const esc = (t: string) => t.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -23,7 +22,7 @@ export function mountStart(store: Store): () => void {
     b.type = 'button';
     b.className = 'char';
     b.dataset.id = id;
-    b.innerHTML = `${id !== 'blank' ? '<span class="badge">Season 01</span>' : ''}<img src="/tiles/char-${id}.webp" alt="" width="192" height="192" loading="lazy"><strong>${id === 'blank' ? 'Start from blank' : esc(c.name)}</strong><span>${esc(c.tag)}</span>`;
+    b.innerHTML = `${id !== 'blank' ? '<span class="badge">Season 01</span>' : ''}<img src="${import.meta.env.BASE_URL}tiles/char-${id}.webp" alt="" width="192" height="192" loading="lazy"><strong>${id === 'blank' ? 'Start from blank' : esc(c.name)}</strong><span>${esc(c.tag)}</span>`;
     b.addEventListener('click', () => store.replace(characterDesign(id)));
     el.appendChild(b);
     return b;

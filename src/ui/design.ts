@@ -45,7 +45,8 @@ export function mountDesign(store: Store, scene: BrushScene): () => void {
   let headUploadRev = 0; // bumps when the head upload changes, so cap cards re-render
   function tileSrc(part: PartId, style: string): string {
     if (style === 'upload') return snapshot(scene, store.get(), 'tile', 192, 192, { part, style }); // live, in the current colour
-    return `/tiles/${part}-${style}.webp`;
+    if (!(style in PART[part].options)) { console.error(`No tile for ${part}-${style}`); return ''; }
+    return `${import.meta.env.BASE_URL}tiles/${part}-${style}.webp`;
   }
 
   /* ---------- colourway + finish ---------- */
@@ -138,7 +139,7 @@ export function mountDesign(store: Store, scene: BrushScene): () => void {
       b.setAttribute('aria-pressed', String(d.parts[id] === o.k));
       b.innerHTML = `${o.badge ? '<span class="badge">STL</span>' : ''}<img alt="" width="192" height="192" loading="lazy">${esc(o.name)}`;
       const img = b.querySelector('img')!;
-      try { img.src = tileSrc(id, o.k); } catch (e) { console.error(e); }
+      try { const src = tileSrc(id, o.k); if (src) img.src = src; } catch (e) { console.error(e); }
       b.addEventListener('click', () => store.update({ parts: { ...store.get().parts, [id]: o.k } }));
       tiles.appendChild(b);
     }
