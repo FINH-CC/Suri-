@@ -176,6 +176,7 @@ async function boot(): Promise<void> {
     s.frameDefault();
     await firstFrame(s);
     if (import.meta.env.DEV) (window as unknown as { __scene?: BrushScene }).__scene = s;
+    if (import.meta.env.DEV && location.search === '?tiles') void import('./dev/tiles').then((m) => m.installTileRenderer(s));
     intro.finish();
   } catch (err) {
     ac.abort(); // undo any half-finished mount so Retry starts clean
