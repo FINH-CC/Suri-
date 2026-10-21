@@ -20,6 +20,8 @@ import { createFlow } from './ui/flow';
 import type { Step } from './ui/flow';
 import * as intro from './ui/intro';
 import { mountDesign } from './ui/design';
+import { mountDesigns } from './ui/designs';
+import { mountShare } from './ui/share';
 import { mountHandover } from './ui/handover';
 import { mountNameIt } from './ui/nameit';
 import { mountStart } from './ui/start';
@@ -66,12 +68,24 @@ function wireStage(s: BrushScene, st: Store, flow: Flow, signal: AbortSignal, un
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const stage = document.getElementById('stage')!;
 
-  // undo (Task 15 adds redo, keyboard shortcuts and Save/Share)
+  // undo / redo buttons and keyboard (legacy 1443)
   const undo = document.getElementById('undo') as HTMLButtonElement;
+  const redo = document.getElementById('redo') as HTMLButtonElement;
   undo.addEventListener('click', () => st.undo(), on);
-  const syncUndo = () => { undo.disabled = !st.canUndo(); };
-  syncUndo();
-  unsubs.push(st.subscribe(syncUndo));
+  redo.addEventListener('click', () => st.redo(), on);
+  const syncHistory = () => { undo.disabled = !st.canUndo(); redo.disabled = !st.canRedo(); };
+  syncHistory();
+  unsubs.push(st.subscribe(syncHistory));
+  addEventListener('keydown', (e) => {
+    if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
+    const el = document.activeElement as HTMLElement | null;
+    if (el && (/^(INPUT|TEXTAREA)$/.test(el.tagName) || el.isContentEditable)) return;
+    const k = e.key.toLowerCase();
+    if (k === 'z' && !e.shiftKey) { e.preventDefault(); st.undo(); }
+    else if ((k === 'z' && e.shiftKey) || (k === 'y' && !e.shiftKey)) { e.preventDefault(); st.redo(); }
+  }, on);
+  mountShare(st, signal);
+  mountDesigns(st, s, signal);
 
   // toolbar: take apart, camera views (legacy 1679-1684)
   const apart = document.getElementById('tb-apart')!;

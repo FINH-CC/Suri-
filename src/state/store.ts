@@ -9,6 +9,10 @@ export interface Store {
   subscribe(fn: (next: Design, prev: Design) => void): () => void;
   undo(): boolean;
   canUndo(): boolean;
+  redo(): boolean;
+  canRedo(): boolean;
+  /** What caused the most recent change, so screens can drop selections that undo/redo made stale. */
+  lastChange(): 'edit' | 'undo' | 'redo';
 }
 
 const MAX_HISTORY = 50;
@@ -33,6 +37,8 @@ export function createStore(initial: Design, io: { save(json: string): void; now
   let state = check(initial);
   let lastSnap = JSON.stringify(state);
   const history: Design[] = [];
+  const future: Design[] = [];
+  let cause: 'edit' | 'undo' | 'redo' = 'edit';
   const listeners = new Set<(next: Design, prev: Design) => void>();
   let lastPush = 0;
 
@@ -49,6 +55,8 @@ export function createStore(initial: Design, io: { save(json: string): void; now
     const prev = state;
     const next = check(raw);
     if (JSON.stringify(next) === lastSnap) return;
+    future.length = 0;
+    cause = 'edit';
     if (record) {
       const t = now();
       if (t - lastPush > COLLAPSE_MS) {
@@ -73,9 +81,25 @@ export function createStore(initial: Design, io: { save(json: string): void; now
     undo() {
       const prev = history.pop();
       if (!prev) return false;
+      future.push(state);
+      if (future.length > MAX_HISTORY) future.shift();
+      lastPush = 0;
+      cause = 'undo';
       commit(check(prev), state);
       return true;
     },
     canUndo: () => history.length > 0,
+    redo() {
+      const next = future.pop();
+      if (!next) return false;
+      history.push(state);
+      if (history.length > MAX_HISTORY) history.shift();
+      lastPush = 0;
+      cause = 'redo';
+      commit(check(next), state);
+      return true;
+    },
+    canRedo: () => future.length > 0,
+    lastChange: () => cause,
   };
 }

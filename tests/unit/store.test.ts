@@ -110,4 +110,64 @@ describe('store fixes', () => {
     expect(fn).toHaveBeenCalledTimes(1);
     expect(store.get().stickers[0].s).toBe(1.2);
   });
+
+  describe('redo', () => {
+    it('redo re-applies an undone change', () => {
+      const { store } = make();
+      expect(store.canRedo()).toBe(false);
+      store.update({ name: 'A' });
+      store.undo();
+      expect(store.canRedo()).toBe(true);
+      expect(store.redo()).toBe(true);
+      expect(store.get().name).toBe('A');
+      expect(store.canRedo()).toBe(false);
+      expect(store.canUndo()).toBe(true);
+      expect(store.redo()).toBe(false);
+    });
+    it('a new edit clears the forward stack', () => {
+      const { store, tick } = make();
+      store.update({ name: 'A' }); tick(1000);
+      store.undo();
+      store.update({ name: 'B' });
+      expect(store.canRedo()).toBe(false);
+    });
+    it('a no-op update keeps the forward stack', () => {
+      const { store } = make();
+      store.update({ name: 'A' });
+      store.undo();
+      store.update({ name: 'Nova' });
+      expect(store.canRedo()).toBe(true);
+    });
+    it('undo and redo never collapse with the next edit', () => {
+      const { store, tick } = make();
+      store.update({ name: 'A' }); tick(1000);
+      store.undo(); tick(10);
+      store.update({ name: 'B' }); // fresh step despite being within 700 ms
+      store.undo();
+      expect(store.get().name).toBe('Nova');
+    });
+    it('caps both stacks at 50 and reports the cause', () => {
+      const { store, tick } = make();
+      for (let i = 0; i < 60; i++) { store.update({ name: 'n' + i }); tick(1000); }
+      let u = 0;
+      while (store.undo()) u++;
+      expect(u).toBe(50);
+      expect(store.lastChange()).toBe('undo');
+      let r = 0;
+      while (store.redo()) r++;
+      expect(r).toBe(50);
+      expect(store.lastChange()).toBe('redo');
+      store.update({ name: 'z' });
+      expect(store.lastChange()).toBe('edit');
+    });
+    it('redo notifies with (next, prev)', () => {
+      const { store } = make();
+      store.update({ name: 'A' });
+      store.undo();
+      const fn = vi.fn();
+      store.subscribe(fn);
+      store.redo();
+      expect(fn).toHaveBeenCalledWith(expect.objectContaining({ name: 'A' }), expect.objectContaining({ name: 'Nova' }));
+    });
+  });
 });
