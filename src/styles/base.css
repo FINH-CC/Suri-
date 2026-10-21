@@ -1,8 +1,8 @@
 /* SURI brand typeface (Plain). The trial files draw most punctuation (: / & ? quotes dashes £ …) as a dot,
    so Plain only covers letters, digits and safe marks; everything else falls back to Inter. Drop unicode-range with the licensed files. */
-@font-face{font-family:"Plain";src:url("/fonts/plain-light.woff2") format("woff2");font-weight:100 300;font-style:normal;font-display:swap;unicode-range:U+0020,U+0027,U+002C-002E,U+0030-0039,U+0041-005A,U+0061-007A,U+00B7,U+00C0-00FF,U+2019}
-@font-face{font-family:"Plain";src:url("/fonts/plain-regular.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;unicode-range:U+0020,U+0027,U+002C-002E,U+0030-0039,U+0041-005A,U+0061-007A,U+00B7,U+00C0-00FF,U+2019}
-@font-face{font-family:"Plain";src:url("/fonts/plain-medium.woff2") format("woff2");font-weight:500 700;font-style:normal;font-display:swap;unicode-range:U+0020,U+0027,U+002C-002E,U+0030-0039,U+0041-005A,U+0061-007A,U+00B7,U+00C0-00FF,U+2019}
+@font-face{font-family:"Plain";src:url("../assets/fonts/plain-light.woff2") format("woff2");font-weight:100 300;font-style:normal;font-display:swap;unicode-range:U+0020,U+0027,U+002C-002E,U+0030-0039,U+0041-005A,U+0061-007A,U+00B7,U+00C0-00FF,U+2019}
+@font-face{font-family:"Plain";src:url("../assets/fonts/plain-regular.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;unicode-range:U+0020,U+0027,U+002C-002E,U+0030-0039,U+0041-005A,U+0061-007A,U+00B7,U+00C0-00FF,U+2019}
+@font-face{font-family:"Plain";src:url("../assets/fonts/plain-medium.woff2") format("woff2");font-weight:500 700;font-style:normal;font-display:swap;unicode-range:U+0020,U+0027,U+002C-002E,U+0030-0039,U+0041-005A,U+0061-007A,U+00B7,U+00C0-00FF,U+2019}
 :root{
   --bg:#ded7d3; --surface:#f5f4f0; --stage:#e8e4de; --tile:#ecebe8; --tile-hover:#e4e2de;
   --ink:#252525; --heading:#000000; --muted:#595959; --line:#cbcbc7; --on-ink:#fafafa; --forest:#4e624d;

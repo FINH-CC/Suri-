@@ -9,6 +9,7 @@ import type { Store } from '../state/store';
 import { buildPart, dispose } from '../three/parts/index';
 import type { BrushScene } from '../three/scene';
 import { snapshot } from '../three/snapshot';
+import { tileUrl } from '../assets/tiles';
 import { mountStickersCard } from './stickers-card';
 import { toast } from './toast';
 import { UPLOAD_COPY, parseStl } from './upload';
@@ -46,7 +47,7 @@ export function mountDesign(store: Store, scene: BrushScene): () => void {
   function tileSrc(part: PartId, style: string): string {
     if (style === 'upload') return snapshot(scene, store.get(), 'tile', 192, 192, { part, style }); // live, in the current colour
     if (!(style in PART[part].options)) { console.error(`No tile for ${part}-${style}`); return ''; }
-    return `${import.meta.env.BASE_URL}tiles/${part}-${style}.webp`;
+    return tileUrl(`${part}-${style}`);
   }
 
   /* ---------- colourway + finish ---------- */

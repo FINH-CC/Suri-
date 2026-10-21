@@ -9,7 +9,7 @@ import { snapshot } from '../three/snapshot';
 
 /*
  * Dev-only tile renderer (loaded by main.ts when DEV and the URL is `?tiles`).
- * scripts/render-tiles.ts calls these in a headed Chromium and writes public/tiles/*.webp.
+ * scripts/render-tiles.ts calls these in a headed Chromium and writes src/assets/tiles/*.webp.
  */
 
 declare global {

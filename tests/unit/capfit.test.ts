@@ -11,10 +11,10 @@ import { dispose } from '../../src/three/parts/index';
 
 let ctx: BuildCtx;
 let core: CapCore;
-const committed = JSON.parse(readFileSync('public/model/cap-fit.json', 'utf8')) as Record<string, CapCore>;
+const committed = JSON.parse(readFileSync('src/assets/model/cap-fit.json', 'utf8')) as Record<string, CapCore>;
 
 beforeAll(async () => {
-  const { cad, meta } = await loadCadFromGlb('public/model/brush.glb', 'public/model/brush-meta.json');
+  const { cad, meta } = await loadCadFromGlb('src/assets/model/brush.glb', 'src/assets/model/brush-meta.json');
   ctx = { cad, dim: dimFor(meta.tuftFaceZ), tufts: meta.tufts, finish: 'matte', headStyle: 'plain', uploads: {} };
   const head = buildHead('plain', '#ffffff', ctx);
   core = capCore(capEnvelope(head));

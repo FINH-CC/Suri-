@@ -50,9 +50,9 @@ The render's look (lights, studio, shadows, occlusion, material response) lives 
 
 | What | Command | Writes |
 | --- | --- | --- |
-| Model (from the CAD embedded in `legacy/index.html`) | `npm run extract-cad` | `public/model/brush.glb`, `public/model/brush-meta.json` |
-| Cap fit (cap cavity per head style) | `npm run cap-fit` | `public/model/cap-fit.json` |
-| Option and character tiles (needs `npm run dev`, opens headed Chromium) | `npm run tiles` | `public/tiles/*.webp` |
+| Model (from the CAD embedded in `legacy/index.html`) | `npm run extract-cad` | `src/assets/model/brush.glb`, `src/assets/model/brush-meta.json` |
+| Cap fit (cap cavity per head style) | `npm run cap-fit` | `src/assets/model/cap-fit.json` |
+| Option and character tiles (needs `npm run dev`, opens headed Chromium) | `npm run tiles` | `src/assets/tiles/*.webp` |
 
 Run cap-fit after the model changes, and tiles after the model, the cap fit, materials or lighting change.
 
@@ -62,7 +62,9 @@ Run cap-fit after the model changes, and tiles after the model, the cap fit, mat
     npx vercel@latest deploy --prod --scope finhcc     # production (only with Alexis's go-ahead)
 
 Vercel builds from source (`npm run build`, output `dist`, see `vercel.json`; `.vercelignore` keeps `legacy/`, `docs/`
-and tests out of the upload). Files under `/model`, `/tiles` and `/fonts` are served with
-`Cache-Control: public, max-age=31536000, immutable` and stable names, so **bump the filename when one changes**
-(for example `brush.v2.glb`, and update the path in `src/main.ts`), or returning visitors keep the old file for a
-year. Vite already hashes everything imported from `src/`.
+and tests out of the upload). The model, cap fit, tiles and fonts live in `src/assets/` and are imported through
+Vite (`?url` imports in `src/main.ts`, `import.meta.glob` in `src/assets/tiles.ts`, relative `url()` in
+`src/styles/base.css`), so every build gives each one a content-hashed name under `/assets/`. Only `/assets/*` is
+served with `Cache-Control: public, max-age=31536000, immutable`; `index.html` and the rest of `public/` keep Vercel's
+default revalidating cache. Regenerating a file changes its hash, so returning visitors pick it up on their next visit
+with no renaming. The hashed brush glb is also preloaded from `index.html` (a small plugin in `vite.config.ts`).

@@ -28,6 +28,9 @@ import { mountHandover } from './ui/handover';
 import { mountNameIt } from './ui/nameit';
 import { mountStart } from './ui/start';
 import { toast } from './ui/toast';
+import brushGlbUrl from './assets/model/brush.glb?url';
+import brushMetaUrl from './assets/model/brush-meta.json?url';
+import capFitUrl from './assets/model/cap-fit.json?url';
 
 const KEY = 'suri-kids-current';
 
@@ -174,8 +177,8 @@ async function boot(): Promise<void> {
     });
     const st = store;
     const [model, capFit] = await Promise.all([
-      loadModel('/model/brush.glb', '/model/brush-meta.json', intro.showProgress),
-      fetch('/model/cap-fit.json').then((r) => {
+      loadModel(brushGlbUrl, brushMetaUrl, intro.showProgress),
+      fetch(capFitUrl).then((r) => {
         if (!r.ok) throw new Error(`cap-fit.json: HTTP ${r.status}`);
         return r.json() as Promise<Record<string, CapCore>>;
       }),

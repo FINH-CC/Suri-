@@ -16,7 +16,7 @@ import { readFileSync } from 'node:fs';
 let ctx: BuildCtx;
 
 beforeAll(async () => {
-  const { cad, meta } = await loadCadFromGlb('public/model/brush.glb', 'public/model/brush-meta.json');
+  const { cad, meta } = await loadCadFromGlb('src/assets/model/brush.glb', 'src/assets/model/brush-meta.json');
   ctx = { cad, dim: dimFor(meta.tuftFaceZ), tufts: meta.tufts, finish: 'matte', headStyle: 'plain', uploads: {} };
 });
 
@@ -124,7 +124,7 @@ describe('surface winding (sticker decals rely on outward normals)', () => {
     for (const v of d) expect(v).toBeGreaterThan(0);
   });
   it('cap outer sheet points outward, inner cavity sheet points inward', () => {
-    const fit = JSON.parse(readFileSync('public/model/cap-fit.json', 'utf8')) as Record<string, CapCore>;
+    const fit = JSON.parse(readFileSync('src/assets/model/cap-fit.json', 'utf8')) as Record<string, CapCore>;
     const cap = buildCap('bubble', '#ffffff', { ...ctx, capCore: fit.plain });
     const outer = radialDots(cap.children[0] as THREE.Mesh), inner = radialDots(cap.children[1] as THREE.Mesh);
     expect(outer.length).toBeGreaterThanOrEqual(20);

@@ -6,7 +6,7 @@ import { PARTS } from '../src/data/parts';
 
 // Needs `npm run dev` on port 3240. Headed so the render uses a real GPU.
 const URL = process.env.TILES_URL ?? 'http://localhost:3240/?tiles';
-const OUT = 'public/tiles';
+const OUT = 'src/assets/tiles';
 const parts = Object.fromEntries(PARTS.map((p) => [p.id, Object.keys(p.options)])) as Record<string, string[]>;
 const chars = Object.keys(CHARACTERS);
 const MIN_BYTES = 2048; // an empty transparent render is far smaller

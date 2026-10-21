@@ -1,3 +1,4 @@
+import { tileUrl } from '../assets/tiles';
 import { CHARACTERS } from '../data/characters';
 import type { CharacterId } from '../data/characters';
 import type { Design } from '../state/design';
@@ -22,7 +23,7 @@ export function mountStart(store: Store): () => void {
     b.type = 'button';
     b.className = 'char';
     b.dataset.id = id;
-    b.innerHTML = `${id !== 'blank' ? '<span class="badge">Season 01</span>' : ''}<img src="${import.meta.env.BASE_URL}tiles/char-${id}.webp" alt="" width="192" height="192" loading="lazy"><strong>${id === 'blank' ? 'Start from blank' : esc(c.name)}</strong><span>${esc(c.tag)}</span>`;
+    b.innerHTML = `${id !== 'blank' ? '<span class="badge">Season 01</span>' : ''}<img src="${tileUrl(`char-${id}`)}" alt="" width="192" height="192" loading="lazy"><strong>${id === 'blank' ? 'Start from blank' : esc(c.name)}</strong><span>${esc(c.tag)}</span>`;
     b.addEventListener('click', () => store.replace(characterDesign(id)));
     el.appendChild(b);
     return b;

@@ -1,5 +1,5 @@
 /**
- * Node-side twin of src/three/model.ts loadModel: parse public/model/brush.glb with three's GLTFLoader
+ * Node-side twin of src/three/model.ts loadModel: parse src/assets/model/brush.glb with three's GLTFLoader
  * (meshopt-decoded) and bake it with the shared cadFromScene, so tests and scripts see the exact
  * geometry the browser builds. No browser globals are needed: the glb carries no textures.
  */

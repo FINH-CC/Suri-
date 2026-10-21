@@ -1,6 +1,6 @@
 /**
  * Extract the client CAD embedded in legacy/index.html (`<script id="cad-data">`)
- * into public/model/brush.glb + public/model/brush-meta.json.
+ * into src/assets/model/brush.glb + src/assets/model/brush-meta.json.
  *
  * Decoding mirrors legacy/index.html lines 744-772 (b64, gunzip, buildCadGeo):
  * positions Uint16 dequantised as q/65535*size+min (scene units = 10 mm),
@@ -149,6 +149,6 @@ export async function extractCad(legacyHtmlPath: string, outDir: string): Promis
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  await extractCad('legacy/index.html', 'public/model');
-  console.log('wrote public/model/brush.glb and public/model/brush-meta.json');
+  await extractCad('legacy/index.html', 'src/assets/model');
+  console.log('wrote src/assets/model/brush.glb and src/assets/model/brush-meta.json');
 }
