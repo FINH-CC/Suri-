@@ -145,12 +145,12 @@ const HERO: Look = {
   shadow: {
     ...PARITY.shadow,
     mapSize: 4096,
-    radius: 5,
+    radius: 10,
     frustum: { left: -20, right: 20, top: 26, bottom: -26 },
   },
   ssao: { radius: 0.5, bias: 0.015, strength: 0.48 },
   contact: { box: 'true', alpha: [0.4, 0.16, 0], scale: 1.3, drop: 0.01 },
-  ground: { opacity: 0.16, fade: [1, 7] },
+  ground: { opacity: 0.15, fade: [0.5, 5] },
   pixelRatio: [1.5, 2],
   material: {
     roughness: 0.92,
