@@ -1,21 +1,53 @@
-/* Task 17 owns the pinned-viewer layout; these are the legacy breakpoints, with any declaration the legacy
-   TYPE + SPACING block overrode dropped or folded so the final values match. */
+/* ---------- phones and small tablets (< 1000 px): pinned viewer ----------
+   The stage pins under the header while the options column scrolls underneath it; one sticky bottom bar.
+   --hdr is the phone header height (10 + 38 + 10), --pin the pinned stage height. */
 @media (max-width: 1000px){
-  .pdp{grid-template-columns:1fr;gap:20px;padding:0 16px 56px}
-  .media{position:relative;top:0}
-  .stage{height:62svh;min-height:400px}
+  :root{--hdr:calc(58px + env(safe-area-inset-top,0px));--pin:max(40svh,280px)}
+  /* anything scrolled into view (step track, a part card) lands below the pinned stage, not under it */
+  html{scroll-padding-top:calc(var(--hdr) + var(--pin) + 12px)}
+  /* no visible scrollbars in the phone layout */
+  html,dialog,.dlg-body{scrollbar-width:none}
+  html::-webkit-scrollbar,dialog::-webkit-scrollbar,.dlg-body::-webkit-scrollbar{display:none}
+
+  .topbar{grid-template-columns:auto 1fr;padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top,0px))}
   .nav{display:none}
-  .topbar{grid-template-columns:auto 1fr;padding:10px 16px}
   .wordmark img{height:18px}
+  .icon-btn span{display:none}
+
+  .pdp{grid-template-columns:1fr;gap:12px;padding:0 16px}
+  /* opaque, above the cards that scroll underneath; a short fade softens the cut below it */
+  /* full-bleed (margin/padding cancel the page gutter) so nothing scrolling underneath peeks out at the sides */
+  .media{position:sticky;top:var(--hdr);z-index:5;background:var(--bg);margin:0 -16px;padding:0 16px}
+  .media::after{content:"";position:absolute;left:0;right:0;top:100%;height:12px;pointer-events:none;background:linear-gradient(var(--bg),rgba(222,215,211,0))}
+  .stage{height:40svh;min-height:280px}
+
   .round{width:42px;height:42px}.round.prev{left:12px}.round.next{right:12px}
   .tb-main{height:32px;padding:0 14px}
   .seg button{height:26px;padding:0 10px}
-  .icon-btn span{display:none}
+
+  .info{padding-top:8px}
+  .steps{position:static}
+  .step-nav{margin:24px -16px 0;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
+}
+/* short screens (landscape phones): a pinned 280 px stage would leave no room for the options, so it scrolls with the page */
+@media (max-width: 1000px) and (max-height: 559.98px){
+  .media{position:relative;top:auto}
+  html{scroll-padding-top:calc(var(--hdr) + 12px)}
 }
 @media (max-width:520px){
   :root{--t-display:22px;--t-title:16px}
   section.part{padding:16px}
-  .step-nav{margin:24px -16px 0;padding-left:16px;padding-right:16px}
   .pp-f b{font-size:10.5px}.pp-f.name b{font-size:13px}.pp-f small{font-size:6.5px}
 }
 @media (max-width:480px){.steps .node{width:58px}.steps .count{display:none}}
+
+/* narrow stages (any viewport): undo/redo sit bottom-left and would collide with a bottom-centred toolbar,
+   so the toolbar moves to the top of the stage (frameDefault keeps the brush clear of it) */
+@container stage (max-width: 520px){
+  .toolbar{top:12px;bottom:auto}
+}
+@container stage (max-width: 340px){
+  .toolbar{gap:6px}
+  .tb-main{padding:0 10px}
+  .seg button{padding:0 7px}
+}

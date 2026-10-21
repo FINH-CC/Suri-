@@ -290,13 +290,15 @@ export class BrushScene {
     this.camera.updateProjectionMatrix();
   }
 
-  /** Fit the whole brush into the free band above the toolbar, so nothing overlaps. */
+  /** Fit the whole brush into the free band beside the toolbar (below it or above it), so nothing overlaps. */
   frameDefault(): void {
     const r = this.stage.getBoundingClientRect();
     if (!r.height) return;
-    const bar = this.stage.querySelector('.toolbar');
-    const top = Math.max(28, r.height * 0.06); // breathing room above the cap
-    const bot = bar ? r.bottom - bar.getBoundingClientRect().top + 14 : 0;
+    // keep the brush clear of the toolbar, wherever the stylesheet puts it (bottom on wide stages, top on narrow ones)
+    const bar = this.stage.querySelector('.toolbar')?.getBoundingClientRect();
+    const barOnTop = !!bar && bar.top + bar.height / 2 < r.top + r.height / 2;
+    const top = Math.max(28, r.height * 0.06, bar && barOnTop ? bar.bottom - r.top + 14 : 0); // breathing room above the cap
+    const bot = bar && !barOnTop ? r.bottom - bar.top + 14 : 16;
     const H = r.height, f = Math.max(0.3, (H - top - bot) / H);
     const box = new THREE.Box3();
     PARTS.forEach((p) => box.expandByObject(this.groups[p.id]));

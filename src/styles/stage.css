@@ -1,7 +1,7 @@
 /* ---------- product layout ---------- */
 .pdp{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(360px,1fr);gap:56px;padding:4px 40px 80px;align-items:start}
 .media{position:sticky;top:calc(76px + env(safe-area-inset-top,0px))}
-.stage{position:relative;background:var(--stage);border-radius:var(--card);overflow:hidden;height:calc(100svh - 96px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));min-height:480px} /* fills the viewport under the header, matching the side panel */
+.stage{position:relative;container:stage/inline-size;background:var(--stage);border-radius:var(--card);overflow:hidden;height:calc(100svh - 96px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));min-height:480px} /* fills the viewport under the header, matching the side panel */
 .stage canvas{display:block;width:100%;height:100%;outline:none;cursor:grab;touch-action:none;position:relative;z-index:1}
 .stage.placing canvas{cursor:crosshair}
 /* soft colour pool behind the 3D brush */
