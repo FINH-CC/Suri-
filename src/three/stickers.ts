@@ -148,6 +148,65 @@ function partMeshes(scene: StickerScene, id: PartId): THREE.Mesh[] {
   return out;
 }
 
+/* ---------- decal proxy: only the triangles a decal can touch ---------- */
+
+// Per geometry, once: each triangle's centroid and the distance from it to its farthest corner (local space).
+const triBounds = new WeakMap<THREE.BufferGeometry, { c: Float32Array; r: Float32Array }>();
+
+function boundsFor(geo: THREE.BufferGeometry): { c: Float32Array; r: Float32Array } {
+  let b = triBounds.get(geo);
+  if (b) return b;
+  const pos = geo.attributes.position, idx = geo.index;
+  const n = (idx ? idx.count : pos.count) / 3;
+  const c = new Float32Array(n * 3), r = new Float32Array(n);
+  const v = [0, 0, 0].map(() => new THREE.Vector3());
+  const m = new THREE.Vector3();
+  for (let t = 0; t < n; t++) {
+    for (let k = 0; k < 3; k++) v[k].fromBufferAttribute(pos, idx ? idx.getX(3 * t + k) : 3 * t + k);
+    m.copy(v[0]).add(v[1]).add(v[2]).multiplyScalar(1 / 3);
+    c[3 * t] = m.x; c[3 * t + 1] = m.y; c[3 * t + 2] = m.z;
+    r[t] = Math.sqrt(Math.max(m.distanceToSquared(v[0]), m.distanceToSquared(v[1]), m.distanceToSquared(v[2])));
+  }
+  b = { c, r };
+  triBounds.set(geo, b);
+  return b;
+}
+
+const _s = new THREE.Vector3(), _q = new THREE.Quaternion(), _p = new THREE.Vector3();
+
+/**
+ * A stand-in for `mesh` holding only the triangles that can reach a decal box of half-diagonal `reach` (world units)
+ * centred on `point`. DecalGeometry clips every triangle of the mesh it is given; on the CAD handle (~46k triangles)
+ * that cost ~80 ms per sticker. Triangles left out lie wholly outside the box, so the decal comes out the same.
+ */
+export function decalProxy(mesh: THREE.Mesh, point: THREE.Vector3, reach: number): THREE.Mesh {
+  const geo = mesh.geometry, pos = geo.attributes.position, nor = geo.attributes.normal, idx = geo.index;
+  const { c, r } = boundsFor(geo);
+  mesh.matrixWorld.decompose(_p, _q, _s);
+  const R = reach / Math.min(Math.abs(_s.x), Math.abs(_s.y), Math.abs(_s.z));
+  const local = _p.copy(point).applyMatrix4(new THREE.Matrix4().copy(mesh.matrixWorld).invert());
+  const keep: number[] = [];
+  for (let t = 0; t < r.length; t++) {
+    const dx = c[3 * t] - local.x, dy = c[3 * t + 1] - local.y, dz = c[3 * t + 2] - local.z, lim = R + r[t];
+    if (dx * dx + dy * dy + dz * dz <= lim * lim) keep.push(t);
+  }
+  const P = new Float32Array(keep.length * 9), N = nor ? new Float32Array(keep.length * 9) : null;
+  keep.forEach((t, j) => {
+    for (let k = 0; k < 3; k++) {
+      const i = idx ? idx.getX(3 * t + k) : 3 * t + k, o = 9 * j + 3 * k;
+      P[o] = pos.getX(i); P[o + 1] = pos.getY(i); P[o + 2] = pos.getZ(i);
+      if (N && nor) { N[o] = nor.getX(i); N[o + 1] = nor.getY(i); N[o + 2] = nor.getZ(i); }
+    }
+  });
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(P, 3));
+  if (N) g.setAttribute('normal', new THREE.BufferAttribute(N, 3));
+  const proxy = new THREE.Mesh(g, mesh.material);
+  proxy.matrixAutoUpdate = false;
+  proxy.matrixWorld.copy(mesh.matrixWorld);
+  return proxy;
+}
+
 function decalFor(scene: StickerScene, st: Sticker, textureFor: TextureFor): THREE.Mesh | null {
   const p = new THREE.Vector3(st.x, st.y, st.z), n = new THREE.Vector3(st.nx, st.ny, st.nz).normalize();
   raycaster.set(p.clone().addScaledVector(n, 1.5), n.clone().negate());
@@ -158,7 +217,10 @@ function decalFor(scene: StickerScene, st: Sticker, textureFor: TextureFor): THR
   helper.position.copy(hit.point);
   helper.lookAt(hit.point.clone().add(n));
   helper.rotateZ((st.r * Math.PI) / 180);
-  const geo = new DecalGeometry(hit.object as THREE.Mesh, hit.point, helper.rotation, new THREE.Vector3(st.s, st.s, 1.6));
+  const size = new THREE.Vector3(st.s, st.s, 1.6);
+  const proxy = decalProxy(hit.object as THREE.Mesh, hit.point, size.length() / 2);
+  const geo = new DecalGeometry(proxy, hit.point, helper.rotation, size);
+  proxy.geometry.dispose();
   const mat = new THREE.MeshStandardMaterial({
     map: textureFor(st.t),
     transparent: true,
