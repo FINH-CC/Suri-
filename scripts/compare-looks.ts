@@ -1,4 +1,5 @@
 import sharp from 'sharp';
+import type { OverlayOptions } from 'sharp';
 
 /*
  * Task 19: the side-by-side sheet of the studio looks.
@@ -38,7 +39,7 @@ const text = (w: number, h: number, s: string, size: number, weight = 600, fill 
 
 const W = LOOKS.length * TW + (LOOKS.length - 1) * GAP;
 const H = LABEL + ROWS.length * TH + ROWS.length * GAP;
-const layers: sharp.OverlayOptions[] = [];
+const layers: OverlayOptions[] = [];
 LOOKS.forEach(([, label], c) => layers.push({ input: text(TW, LABEL, label, 44), left: c * (TW + GAP), top: 0 }));
 for (const [r, [who, view]] of ROWS.entries()) {
   for (const [c, [look]] of LOOKS.entries()) {
