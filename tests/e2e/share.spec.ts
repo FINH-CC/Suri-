@@ -4,6 +4,8 @@ import type { Page } from '@playwright/test';
 const BOOT = 45_000;
 const KEY = 'suri-kids-current';
 const saved = (page: Page) => page.evaluate((k) => localStorage.getItem(k) ?? '', KEY);
+// nothing is saved until the first edit, so read the cap colour (null = untouched)
+const cap = async (page: Page) => { const j = await saved(page); return j ? (JSON.parse(j) as { colours: { cap: string } }).colours.cap : null; };
 
 async function boot(page: Page, url = '/') {
   await page.goto(url);
@@ -68,30 +70,29 @@ test.describe('share, my designs, undo and redo', () => {
     const undo = page.locator('#undo'), redo = page.locator('#redo');
     await expect(undo).toBeDisabled();
     await expect(redo).toBeDisabled();
-    const before = await saved(page);
+    const before = '#6fa5dc'; // the default cap colour (nothing saved yet)
     await page.locator('#card-cap .swatch').nth(4).click();
-    await expect.poll(() => saved(page)).toContain('"cap":"#66bf8d"');
-    const after = await saved(page);
-    expect(after).not.toBe(before);
+    const after = '#66bf8d';
+    await expect.poll(() => cap(page)).toBe(after);
     await expect(undo).toBeEnabled();
     await expect(redo).toBeDisabled();
 
     await undo.click();
-    await expect.poll(() => saved(page)).toBe(before);
+    await expect.poll(() => cap(page)).toBe(before);
     await expect(undo).toBeDisabled();
     await expect(redo).toBeEnabled();
     await redo.click();
-    await expect.poll(() => saved(page)).toBe(after);
+    await expect.poll(() => cap(page)).toBe(after);
     await expect(redo).toBeDisabled();
 
     await page.keyboard.press('ControlOrMeta+z');
-    await expect.poll(() => saved(page)).toBe(before);
+    await expect.poll(() => cap(page)).toBe(before);
     await page.keyboard.press('ControlOrMeta+Shift+z');
-    await expect.poll(() => saved(page)).toBe(after);
+    await expect.poll(() => cap(page)).toBe(after);
     await page.keyboard.press('ControlOrMeta+z');
-    await expect.poll(() => saved(page)).toBe(before);
+    await expect.poll(() => cap(page)).toBe(before);
     await page.keyboard.press('ControlOrMeta+y');
-    await expect.poll(() => saved(page)).toBe(after);
+    await expect.poll(() => cap(page)).toBe(after);
   });
 
   test('shortcuts are ignored while typing in a field', async ({ page }) => {
