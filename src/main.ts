@@ -48,6 +48,8 @@ addEventListener('unhandledrejection', (e) => {
 function readInitial(): Design {
   let hashed: Design | null = null;
   try { hashed = decode(location.hash); } catch { /* malformed hash */ }
+  // The share link has done its job: drop it so a reload reopens the saved current design, not the shared one.
+  if (hashed) try { history.replaceState(null, '', location.pathname + location.search); } catch { /* sandboxed history */ }
   let stored: unknown = null;
   if (!hashed) {
     try { stored = JSON.parse(localStorage.getItem(KEY) ?? 'null'); } catch { /* blocked or corrupt storage */ }

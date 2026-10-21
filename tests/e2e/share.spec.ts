@@ -23,15 +23,38 @@ test.describe('share, my designs, undo and redo', () => {
     await page.locator('#step-next').click();
     await page.locator('#card-cap .tile', { hasText: 'Cloud' }).click();
     await page.locator('#share').click();
-    await expect.poll(() => page.evaluate(() => location.hash)).toMatch(/^#d=/);
     await expect(page.locator('#toast')).toContainText('Link copied');
-    const url = page.url();
+    const url = await page.evaluate(() => navigator.clipboard.readText());
+    expect(new URL(url).hash).toMatch(/^#d=/);
+    await expect.poll(() => page.evaluate(() => location.hash)).toBe(''); // cleared again after copying
     const ctx2 = await browser.newContext({ viewport: { width: 1280, height: 900 }, baseURL: 'http://localhost:3240' }); // fresh storage: only the hash can supply Cloud
     const page2 = await ctx2.newPage();
     await boot(page2, url);
     await page2.locator('#step-next').click();
     await expect(page2.locator('#card-cap .tile', { hasText: 'Cloud' })).toHaveAttribute('aria-pressed', 'true');
     await ctx2.close();
+  });
+
+  test('a share link is consumed: edits after opening it survive a reload', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    page.on('dialog', (d) => void d.dismiss());
+    await boot(page);
+    await page.locator('#step-next').click();
+    await page.locator('#card-cap .tile', { hasText: 'Cloud' }).click();
+    await page.locator('#share').click();
+    await expect(page.locator('#toast')).toContainText('Link copied');
+    const url = await page.evaluate(() => navigator.clipboard.readText());
+    await page.goto('about:blank'); // a hash-only goto from the same page would not reload it
+    await boot(page, url);
+    await expect.poll(() => page.evaluate(() => location.hash)).toBe('');
+    await page.locator('#step-next').click();
+    await expect(page.locator('#card-cap .tile', { hasText: 'Cloud' })).toHaveAttribute('aria-pressed', 'true');
+    await page.locator('#card-cap .tile', { hasText: 'Bear' }).click();
+    await expect.poll(() => page.evaluate((k) => JSON.parse(localStorage.getItem(k) ?? '{}').parts?.cap, KEY)).toBe('bear');
+    await page.reload();
+    await expect(page.locator('#intro')).toHaveCount(0, { timeout: BOOT });
+    await page.locator('#step-next').click();
+    await expect(page.locator('#card-cap .tile', { hasText: 'Bear' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   test('save design lists a card, open restores it, delete removes it', async ({ page }) => {
