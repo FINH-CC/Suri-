@@ -18,6 +18,11 @@ test.describe('brush hover cursor', () => {
     const c = (await page.locator('#stage canvas').boundingBox())!;
     await page.mouse.move(c.x + c.width / 2, c.y + c.height / 2, { steps: 3 });
     await expect.poll(async () => { await page.mouse.move(c.x + c.width / 2 + 1, c.y + c.height / 2, { steps: 2 }); await page.waitForTimeout(100); return cursor(page); }).toBe('pointer');
+    // leaving the canvas resets it
+    await page.mouse.move(c.x + c.width + 20, c.y + c.height / 2, { steps: 3 });
+    await expect.poll(() => cursor(page)).toBe('');
+    await page.mouse.move(c.x + c.width / 2, c.y + c.height / 2, { steps: 3 });
+    await expect.poll(async () => { await page.mouse.move(c.x + c.width / 2 + 1, c.y + c.height / 2); await page.waitForTimeout(100); return cursor(page); }).toBe('pointer');
     await page.mouse.move(c.x + 6, c.y + c.height - 6, { steps: 3 });
     await expect.poll(async () => { await page.mouse.move(c.x + 7, c.y + c.height - 6); await page.waitForTimeout(100); return cursor(page); }).toBe('');
   });

@@ -114,7 +114,7 @@ function wireStage(s: BrushScene, st: Store, flow: Flow, signal: AbortSignal, un
   // tap a part on the brush (no drag, not while placing a sticker) to jump to its card (legacy 1249-1257)
   const canvas = s.renderer.domElement;
   let down: { x: number; y: number } | null = null;
-  canvas.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY }; }, on);
+  canvas.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY }; canvas.style.cursor = ''; }, on);
   canvas.addEventListener('pointerup', (e) => {
     const start = down;
     down = null;
@@ -135,12 +135,14 @@ function wireStage(s: BrushScene, st: Store, flow: Flow, signal: AbortSignal, un
   // pointer cursor over a part (mouse only; throttled to one hit-test per 90 ms; legacy 1258-1261)
   let hoverT = 0;
   canvas.addEventListener('pointermove', (e) => {
-    if (e.pointerType === 'touch' || e.buttons || stage.classList.contains('placing')) return;
+    if (e.pointerType === 'touch') return;
+    if (e.buttons || stage.classList.contains('placing')) { canvas.style.cursor = ''; return; }
     const n = performance.now();
     if (n - hoverT < 90) return;
     hoverT = n;
     canvas.style.cursor = s.partAt(e.clientX, e.clientY) ? 'pointer' : '';
   }, on);
+  canvas.addEventListener('pointerleave', () => { canvas.style.cursor = ''; }, on);
 }
 
 // Created once: the step sections and bottom bar exist before the brush loads. Task 13-15 hook their screens in here.

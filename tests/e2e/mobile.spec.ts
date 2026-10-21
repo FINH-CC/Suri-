@@ -85,7 +85,7 @@ test.describe('phone layout', () => {
     stage = await box(page, '#stage');
     expect(cap.y).toBeGreaterThanOrEqual(stage.y + stage.height - 1);
 
-    // undo/redo never collide with the toolbar (enable them first: they are invisible while disabled)
+    // undo/redo never collide with the toolbar (enable them first: while disabled they are dimmed, not hidden)
     await page.locator('#card-cap .swatch').nth(4).click();
     await page.waitForTimeout(800); // past the store's 700 ms collapse window: two undo steps
     await page.locator('#card-cap .swatch').nth(3).click();
