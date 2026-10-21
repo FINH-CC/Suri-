@@ -7,6 +7,8 @@ import type { Page } from '@playwright/test';
  *   npm run capture-reference                         legacy build (port 3241) -> docs/reference
  *   npm run capture-reference -- --target new         new build (port 3240)    -> docs/reference/new
  *   ... --out <dir> overrides the output folder; --url <base> overrides the port (e.g. a production preview).
+ *   ... --ids nova,splash --views front,iso --prefix a- --no-apart: a subset, file names prefixed (Task 19 looks;
+ *   pass the look in the URL, e.g. --url 'http://localhost:3240/?look=a').
  * Both targets use the same crop: 1200x900 from the top-left of #stage at a 2100x1100 viewport, so the
  * stage chrome (undo/redo, toolbar) appears in both sets.
  */
@@ -18,8 +20,11 @@ const target = arg('target') ?? 'legacy';
 if (target !== 'legacy' && target !== 'new') throw new Error(`--target must be legacy or new, got ${target}`);
 const OUT = arg('out') ?? (target === 'legacy' ? 'docs/reference' : 'docs/reference/new');
 const URL = arg('url') ?? (target === 'legacy' ? 'http://localhost:3241/' : 'http://localhost:3240/');
-const ids = ['pip', 'puff', 'splash', 'nova'];
-const views = ['front', 'side', 'back', 'iso'];
+const ids = arg('ids')?.split(',') ?? ['pip', 'puff', 'splash', 'nova'];
+const ALL_VIEWS = ['front', 'side', 'back', 'iso'];
+const views = arg('views')?.split(',') ?? ALL_VIEWS;
+const PREFIX = arg('prefix') ?? '';
+const APART = !process.argv.includes('--no-apart');
 
 mkdirSync(OUT, { recursive: true });
 
@@ -51,25 +56,27 @@ try {
   };
   const shot = async (name: string) => {
     const png = await settled(page, await clip());
-    writeFileSync(`${OUT}/${name}.png`, png);
-    console.log('wrote', `${OUT}/${name}.png`);
+    writeFileSync(`${OUT}/${PREFIX}${name}.png`, png);
+    console.log('wrote', `${OUT}/${PREFIX}${name}.png`);
   };
 
   for (const id of ids) {
     await page.click(`#chars .char[data-id="${id}"]`);
     await settled(page, await clip());
-    for (let i = 0; i < views.length; i++) {
-      await page.click(`#tb-views [data-view="${i}"]`);
-      await shot(`${id}-${views[i]}`);
+    for (const v of views) {
+      await page.click(`#tb-views [data-view="${ALL_VIEWS.indexOf(v)}"]`);
+      await shot(`${id}-${v}`);
     }
   }
 
+  if (APART) {
   await page.click('#chars .char[data-id="nova"]');
   await settled(page, await clip());
   await page.click('#tb-views [data-view="3"]');
   await settled(page, await clip());
   await page.click('#tb-apart');
   await shot('nova-apart');
+  }
 } finally {
   await browser.close();
 }

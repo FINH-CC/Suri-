@@ -19,3 +19,18 @@ export function expandByObjectR128(box: THREE.Box3, o: THREE.Object3D): THREE.Bo
   for (const c of o.children) expandByObjectR128(box, c);
   return box;
 }
+
+/**
+ * The true world box of an object's meshes, leaving out InstancedMesh (the bristle tufts). Used by the Task 19 looks
+ * that seat the contact shadow under the brush's real base instead of the r128 box's floor.
+ */
+export function expandByMeshes(box: THREE.Box3, o: THREE.Object3D): THREE.Box3 {
+  o.updateWorldMatrix(false, false);
+  const mesh = o as THREE.Mesh;
+  if (mesh.isMesh && !(o as THREE.InstancedMesh).isInstancedMesh && mesh.geometry?.isBufferGeometry) {
+    if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+    box.union(_gb.copy(mesh.geometry.boundingBox!).applyMatrix4(o.matrixWorld));
+  }
+  for (const c of o.children) expandByMeshes(box, c);
+  return box;
+}

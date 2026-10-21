@@ -34,43 +34,84 @@ export const NEUTRAL_TONE_MAPPING = patchToneMapping();
 export function makeRenderer(opts: THREE.WebGLRendererParameters = {}): THREE.WebGLRenderer {
   const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, ...opts });
   r.outputColorSpace = THREE.SRGBColorSpace;
-  r.toneMapping = NEUTRAL_TONE_MAPPING ? THREE.CustomToneMapping : THREE.LinearToneMapping;
+  r.toneMapping = toneMappingFor('neutral');
   r.toneMappingExposure = 1.05;
   r.setClearColor(0, 0);
   return r;
 }
 
-export function makeEnv(renderer: THREE.WebGLRenderer): THREE.Texture {
-  // Soft product studio, warm-neutral to sit on the stage colour. A large key wraps from the left-front so the
-  // cylinder shades gradually (no flat face, no hard dark band), a broad front fill keeps the shadow side readable,
-  // and two thin rim strips behind outline both edges against the backdrop.
+/** Tone curves a look can pick (Task 19). `neutral` is the patched Khronos PBR Neutral above, the parity curve. */
+export type ToneCurve = 'neutral' | 'agx' | 'aces';
+export function toneMappingFor(t: ToneCurve): THREE.ToneMapping {
+  if (t === 'agx') return THREE.AgXToneMapping;
+  if (t === 'aces') return THREE.ACESFilmicToneMapping;
+  return NEUTRAL_TONE_MAPPING ? THREE.CustomToneMapping : THREE.LinearToneMapping;
+}
+
+/* ---------- studio environment ---------- */
+
+export type Tint = [number, number, number];
+export type Vec3 = [number, number, number];
+/** One emissive panel of the PMREM studio: size, position (it faces the origin), intensity, optional tint. */
+export type EnvPanel = { w: number; h: number; pos: Vec3; i: number; tint?: Tint };
+/** The studio a look reflects: a tinted room box, its panels, and the PMREM blur (sigma). */
+export type EnvSpec = { room: number; tint: Tint; panels: EnvPanel[]; sigma: number };
+
+/**
+ * Soft product studio, warm-neutral to sit on the stage colour (the parity studio). A large key wraps from the
+ * left-front so the cylinder shades gradually (no flat face, no hard dark band), a broad front fill keeps the shadow
+ * side readable, and two thin rim strips behind outline both edges against the backdrop.
+ */
+export const PARITY_ENV: EnvSpec = {
+  room: 0.42,
+  tint: [1, 0.97, 0.94],
+  sigma: 0.025,
+  panels: [
+    { w: 24, h: 46, pos: [-22, 16, 16], i: 2.6, tint: [1, 0.99, 0.97] }, // key: big softbox, high on the left, so tops read brightest and fade downwards
+    { w: 30, h: 36, pos: [6, 0, 28], i: 0.7 }, // broad front fill: lifts the face without flattening it
+    { w: 16, h: 36, pos: [24, 0, 10], i: 0.45 }, // soft right fill: shadow side falls off gently, never black
+    { w: 40, h: 36, pos: [-4, 28, 6], i: 1.7 }, // top: broad overhead light, the long top-to-bottom gradient
+    { w: 3, h: 44, pos: [-20, 4, -16], i: 1.5 }, // rim left-back
+    { w: 3, h: 44, pos: [22, 4, -14], i: 1.6 }, // rim right-back: clean edge on the shadow side
+    { w: 50, h: 50, pos: [0, -27, 4], i: 0.5, tint: [1, 0.95, 0.93] }, // warm floor bounce, picks up the stage tint
+  ],
+};
+
+export function makeEnv(renderer: THREE.WebGLRenderer, spec: EnvSpec = PARITY_ENV): THREE.Texture {
   const env = new THREE.Scene();
-  const warm = (i: number, t: [number, number, number] = [1, 0.97, 0.94]) =>
-    new THREE.Color(i * t[0], i * t[1], i * t[2]);
+  const warm = (i: number, t: Tint = spec.tint) => new THREE.Color(i * t[0], i * t[1], i * t[2]);
   env.add(
     new THREE.Mesh(
       new THREE.BoxGeometry(60, 60, 60),
-      new THREE.MeshBasicMaterial({ color: warm(0.42), side: THREE.BackSide }),
+      new THREE.MeshBasicMaterial({ color: warm(spec.room), side: THREE.BackSide }),
     ),
   );
-  const panel = (w: number, h: number, pos: [number, number, number], i: number, t?: [number, number, number]) => {
+  for (const p of spec.panels) {
     const m = new THREE.Mesh(
-      new THREE.PlaneGeometry(w, h),
-      new THREE.MeshBasicMaterial({ color: warm(i, t), side: THREE.DoubleSide }),
+      new THREE.PlaneGeometry(p.w, p.h),
+      new THREE.MeshBasicMaterial({ color: warm(p.i, p.tint), side: THREE.DoubleSide }),
     );
-    m.position.set(...pos);
+    m.position.set(...p.pos);
     m.lookAt(0, 0, 0);
     env.add(m);
-  };
-  panel(24, 46, [-22, 16, 16], 2.6, [1, 0.99, 0.97]); // key: big softbox, high on the left, so tops read brightest and fade downwards
-  panel(30, 36, [6, 0, 28], 0.7); // broad front fill: lifts the face without flattening it
-  panel(16, 36, [24, 0, 10], 0.45); // soft right fill: shadow side falls off gently, never black
-  panel(40, 36, [-4, 28, 6], 1.7); // top: broad overhead light, the long top-to-bottom gradient
-  panel(3, 44, [-20, 4, -16], 1.5); // rim left-back
-  panel(3, 44, [22, 4, -14], 1.6); // rim right-back: clean edge on the shadow side
-  panel(50, 50, [0, -27, 4], 0.5, [1, 0.95, 0.93]); // warm floor bounce, picks up the stage tint
-  return new THREE.PMREMGenerator(renderer).fromScene(env, 0.025).texture;
+  }
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const tex = pmrem.fromScene(env, spec.sigma).texture;
+  pmrem.dispose();
+  env.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (m.isMesh) {
+      m.geometry.dispose();
+      (m.material as THREE.Material).dispose();
+    }
+  });
+  return tex;
 }
+
+/* ---------- key light ---------- */
+
+/** The key light: linear colour (r128 took hex light colours as-is), intensity, position. */
+export type KeySpec = { colour: Tint; intensity: number; pos: Vec3 };
 
 /**
  * The studio key light (legacy 1087 / 1123: `DirectionalLight(0xfff8f0, .45)` on r128).
@@ -78,9 +119,15 @@ export function makeEnv(renderer: THREE.WebGLRenderer): THREE.Texture {
  * (no sRGB -> linear). Current three is physically based on both counts, so the same look needs .45 * PI and the
  * colour taken as linear values. Measured in the Task 18 parity pass: without this every part rendered ~10% darker.
  */
-export function makeKeyLight(): THREE.DirectionalLight {
-  const colour = new THREE.Color().setRGB(1, 0xf8 / 255, 0xf0 / 255, THREE.LinearSRGBColorSpace);
-  const key = new THREE.DirectionalLight(colour, 0.45 * Math.PI);
-  key.position.set(-20, 26, 16);
+export const PARITY_KEY: KeySpec = { colour: [1, 0xf8 / 255, 0xf0 / 255], intensity: 0.45 * Math.PI, pos: [-20, 26, 16] };
+
+export function setKeyLight(key: THREE.DirectionalLight, spec: KeySpec): THREE.DirectionalLight {
+  key.color.setRGB(...spec.colour, THREE.LinearSRGBColorSpace);
+  key.intensity = spec.intensity;
+  key.position.set(...spec.pos);
   return key;
+}
+
+export function makeKeyLight(spec: KeySpec = PARITY_KEY): THREE.DirectionalLight {
+  return setKeyLight(new THREE.DirectionalLight(), spec);
 }

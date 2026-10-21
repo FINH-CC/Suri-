@@ -92,6 +92,13 @@ export class SSAO {
     this.aoBlurScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.aoBlurMat));
   }
 
+  /** Occlusion sampling radius (world units), depth bias, and how dark the blurred occlusion lands (Task 19 looks). */
+  set(o: { radius: number; bias: number; strength: number }): void {
+    this.aoMat.uniforms.radius.value = o.radius;
+    this.aoMat.uniforms.bias.value = o.bias;
+    this.aoBlurMat.uniforms.strength.value = o.strength;
+  }
+
   private normalMatFor(side: THREE.Side): THREE.MeshNormalMaterial {
     return (this.normalMats[side] ??= Object.assign(new THREE.MeshNormalMaterial({ side }), { toneMapped: false }));
   }

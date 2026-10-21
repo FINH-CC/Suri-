@@ -5,7 +5,7 @@ import type { PartId } from '../data/parts';
 import type { Design } from '../state/design';
 import { buildPart, dispose } from './parts/index';
 import { expandByObjectR128 } from './box';
-import { makeKeyLight } from './renderer';
+import { makeKeyLight, setKeyLight } from './renderer';
 import type { BrushScene } from './scene';
 
 /*
@@ -111,6 +111,9 @@ function frameHero(cam: THREE.PerspectiveCamera, g: THREE.Object3D, aspect: numb
 type Targets = { msaa: THREE.WebGLRenderTarget; out: THREE.WebGLRenderTarget; buf: Uint8Array };
 type State = {
   scene: THREE.Scene;
+  key: THREE.DirectionalLight;
+  rims: THREE.Group;
+  lookVersion: number;
   ortho: THREE.OrthographicCamera;
   persp: THREE.PerspectiveCamera;
   quad: FullScreenQuad;
@@ -132,6 +135,10 @@ const OUTPUT_FRAG = /* glsl */ `
     if ( c.a > 0.0 ) c.rgb /= c.a;
     #if defined( CUSTOM_TONE_MAPPING )
       c.rgb = CustomToneMapping( c.rgb );
+    #elif defined( AGX_TONE_MAPPING )
+      c.rgb = AgXToneMapping( c.rgb );
+    #elif defined( ACES_FILMIC_TONE_MAPPING )
+      c.rgb = ACESFilmicToneMapping( c.rgb );
     #elif defined( LINEAR_TONE_MAPPING )
       c.rgb = LinearToneMapping( c.rgb );
     #endif
@@ -153,26 +160,26 @@ function stateFor(bs: BrushScene): State {
   let s = states.get(bs);
   if (s) return s;
   const scene = new THREE.Scene();
-  // legacy thumb key light (1123)
+  // legacy thumb key light (1123); its colour and intensity follow the look (syncLook), its aim stays the thumb aim
   const key = makeKeyLight();
   scene.add(key);
-  const r = bs.renderer;
-  const defines: Record<string, string> = {};
-  if (r.toneMapping === THREE.CustomToneMapping) defines.CUSTOM_TONE_MAPPING = '';
-  else if (r.toneMapping === THREE.LinearToneMapping) defines.LINEAR_TONE_MAPPING = '';
-  if (THREE.ColorManagement.getTransfer(r.outputColorSpace) === THREE.SRGBTransfer) defines.SRGB_TRANSFER = '';
+  const rims = new THREE.Group();
+  scene.add(rims);
   const mat = new THREE.RawShaderMaterial({
     name: 'SnapshotOutput',
     uniforms: { tDiffuse: { value: null }, toneMappingExposure: { value: 1 } },
     vertexShader: OUTPUT_VERT,
     fragmentShader: OUTPUT_FRAG,
-    defines,
+    defines: outputDefines(bs.renderer),
     blending: THREE.NoBlending,
     depthTest: false,
     depthWrite: false,
   });
   s = {
     scene,
+    key,
+    rims,
+    lookVersion: -1,
     ortho: new THREE.OrthographicCamera(-1, 1, 1, -1, 0.01, 500),
     persp: new THREE.PerspectiveCamera(24, 1, 1, 400),
     quad: new FullScreenQuad(mat),
@@ -181,6 +188,37 @@ function stateFor(bs: BrushScene): State {
   };
   states.set(bs, s);
   return s;
+}
+
+/** The output pass's tone curve and transfer, matching the stage renderer. */
+function outputDefines(r: THREE.WebGLRenderer): Record<string, string> {
+  const defines: Record<string, string> = {};
+  if (r.toneMapping === THREE.CustomToneMapping) defines.CUSTOM_TONE_MAPPING = '';
+  else if (r.toneMapping === THREE.AgXToneMapping) defines.AGX_TONE_MAPPING = '';
+  else if (r.toneMapping === THREE.ACESFilmicToneMapping) defines.ACES_FILMIC_TONE_MAPPING = '';
+  else if (r.toneMapping === THREE.LinearToneMapping) defines.LINEAR_TONE_MAPPING = '';
+  if (THREE.ColorManagement.getTransfer(r.outputColorSpace) === THREE.SRGBTransfer) defines.SRGB_TRANSFER = '';
+  return defines;
+}
+
+/** Tiles, box and passport images follow the stage's look: key colour and intensity, rim lights, tone curve. */
+function syncLook(s: State, bs: BrushScene): void {
+  if (s.lookVersion === bs.lookVersion) return;
+  s.lookVersion = bs.lookVersion;
+  const k = bs.look.key;
+  setKeyLight(s.key, k); // aimed at the origin, as the legacy thumb key was
+  while (s.rims.children.length) s.rims.remove(s.rims.children[0]);
+  bs.extraLights.children.forEach((l) => {
+    const d = l as THREE.DirectionalLight;
+    if (!d.isDirectionalLight) return;
+    const c = d.clone();
+    s.rims.add(c, c.target);
+  });
+  const d = outputDefines(bs.renderer);
+  if (JSON.stringify(d) !== JSON.stringify(s.mat.defines)) {
+    s.mat.defines = d;
+    s.mat.needsUpdate = true;
+  }
 }
 
 /** One pair of targets per size, reused (tile grids render many snapshots at the same size). */
@@ -261,7 +299,9 @@ export function snapshot(
     }
   }
 
+  syncLook(s, bs);
   s.scene.environment = bs.scene.environment; // reuse the stage's PMREM studio
+  s.scene.environmentIntensity = bs.scene.environmentIntensity;
   s.scene.add(g);
   const r = bs.renderer, t = targetsFor(s, w, h);
 

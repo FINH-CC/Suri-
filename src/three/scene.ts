@@ -5,12 +5,14 @@ import type { FinishId, PartId } from '../data/parts';
 import type { Design } from '../state/design';
 import { capCore, capEnvelope } from './capfit';
 import type { CapCore } from './capfit';
-import { applyFinish } from './materials';
+import { applyFinish, setMaterialResponse } from './materials';
 import type { BrushMeta, CadGeo } from './model';
 import { buildPart, dispose } from './parts/index';
 import type { BuildCtx } from './parts/index';
-import { expandByObjectR128 } from './box';
-import { makeEnv, makeKeyLight, makeRenderer } from './renderer';
+import { expandByMeshes, expandByObjectR128 } from './box';
+import { LOOKS } from './looks';
+import type { Look } from './looks';
+import { makeEnv, makeKeyLight, makeRenderer, setKeyLight, toneMappingFor } from './renderer';
 import { disposeSnapshots } from './snapshot';
 import { SSAO } from './ssao';
 
@@ -80,6 +82,12 @@ export class BrushScene {
   frames = 0;
   /** The last error thrown by the frame loop, if any. */
   lastError: unknown = null;
+  /** The studio look in use (Task 19); `lookVersion` bumps on every change so snapshots can follow. */
+  look: Look = LOOKS.parity;
+  lookVersion = 0;
+  readonly key: THREE.DirectionalLight;
+  /** Extra lights a look adds (rim lights); no shadows. */
+  readonly extraLights = new THREE.Group();
 
   private readonly stage: HTMLElement;
   private readonly cad: CadGeo;
@@ -87,6 +95,9 @@ export class BrushScene {
   private readonly capFit: Record<string, CapCore>;
   private readonly ssao: SSAO;
   private readonly contact: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
+  private readonly ground: THREE.Mesh<THREE.PlaneGeometry, THREE.ShadowMaterial>;
+  private readonly groundFade = { value: new THREE.Vector2(4, 14) };
+  private design: Design | null = null;
   private readonly raycaster = new THREE.Raycaster();
   private readonly reduceMotion: boolean;
   private readonly listeners: Record<'userMove', Set<Listener>> = { userMove: new Set() };
@@ -115,28 +126,21 @@ export class BrushScene {
 
     /* main scene (legacy 1081-1117) */
     const renderer = (this.renderer = makeRenderer());
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.domElement.style.display = 'block';
     renderer.domElement.style.width = '100%';
     renderer.domElement.style.height = '100%';
     stage.prepend(renderer.domElement);
     // soft shadows: the brush shades the mount behind it, parts shade each other where they meet
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.shadowMap.autoUpdate = false; // updated once per frame in SSAO.render
     const scene = (this.scene = new THREE.Scene());
-    scene.environment = makeEnv(renderer);
-    const key = makeKeyLight();
+    // environment, exposure, tone curve, key light values and shadow softness come from the look (setLook, below)
+    const key = (this.key = makeKeyLight());
     scene.add(key);
     key.target.position.set(0, 11, 0);
     scene.add(key.target);
     key.castShadow = true;
-    key.shadow.mapSize.set(2048, 2048);
-    key.shadow.radius = 6;
-    key.shadow.bias = -0.0004;
-    key.shadow.normalBias = 0.03;
-    Object.assign(key.shadow.camera, { left: -9, right: 9, top: 15, bottom: -15, near: 1, far: 80 });
-    key.shadow.camera.updateProjectionMatrix();
+    scene.add(this.extraLights);
     this.camera = new THREE.PerspectiveCamera(28, 1, 1, 300);
     this.camera.position.set(16, 13, 47);
     for (const p of PARTS) {
@@ -163,6 +167,27 @@ export class BrushScene {
 
     this.ssao = new SSAO(renderer);
     this.contact = this.makeContact();
+    this.ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(80, 80),
+      new THREE.ShadowMaterial({ transparent: true, depthWrite: false, opacity: 0 }),
+    );
+    // the floor's shadow fades out with distance from the base, so it never ends on the shadow camera's edge
+    this.ground.material.onBeforeCompile = (sh) => {
+      sh.uniforms.fade = this.groundFade;
+      sh.vertexShader =
+        'varying vec2 vGround;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vGround = position.xy;');
+      sh.fragmentShader =
+        'uniform vec2 fade;\nvarying vec2 vGround;\n' +
+        sh.fragmentShader.replace(
+          'gl_FragColor = vec4( color, opacity * ( 1.0 - getShadowMask() ) );',
+          'gl_FragColor = vec4( color, opacity * ( 1.0 - getShadowMask() ) * ( 1.0 - smoothstep( fade.x, fade.y, length( vGround ) ) ) );',
+        );
+    };
+    this.ground.rotation.x = -Math.PI / 2;
+    this.ground.receiveShadow = true;
+    this.ground.visible = false;
+    scene.add(this.ground);
+    this.setLook(LOOKS.parity);
 
     this.ro = new ResizeObserver(() => {
       this.resize();
@@ -176,6 +201,7 @@ export class BrushScene {
   /* ---------- design ---------- */
 
   applyDesign(next: Design, prev: Design | null): void {
+    this.design = next;
     const ids = partsToRebuild(prev, next);
     for (const id of ids) this.rebuild(id, next);
     // re-finish the parts that were not rebuilt (rebuilt parts already carry the new finish)
@@ -245,6 +271,68 @@ export class BrushScene {
   private popPart(id: PartId): void {
     if (!this.popReady || this.reduceMotion) return;
     this.pops[id] = { t0: performance.now() };
+  }
+
+  /* ---------- studio look (Task 19, src/three/looks.ts) ---------- */
+
+  /** Apply every render parameter of `look`. Safe at any time; a change of material response rebuilds the parts. */
+  setLook(look: Look): void {
+    const prev = this.look, first = this.lookVersion === 0, r = this.renderer, key = this.key;
+    this.look = look;
+    this.lookVersion++;
+    r.toneMapping = toneMappingFor(look.tone);
+    r.toneMappingExposure = look.exposure;
+    if (first || prev.env !== look.env) {
+      const old = this.scene.environment;
+      this.scene.environment = makeEnv(r, look.env);
+      old?.dispose();
+    }
+    this.scene.environmentIntensity = look.envIntensity;
+    setKeyLight(key, look.key);
+    // shadows: three recompiles the materials when the map type changes; a new size needs a fresh map
+    const sh = look.shadow;
+    r.shadowMap.type = sh.type;
+    if (key.shadow.mapSize.x !== sh.mapSize) {
+      key.shadow.mapSize.set(sh.mapSize, sh.mapSize);
+      key.shadow.map?.dispose();
+      key.shadow.map = null;
+    }
+    key.shadow.radius = sh.radius;
+    key.shadow.blurSamples = sh.blurSamples;
+    key.shadow.bias = sh.bias;
+    key.shadow.normalBias = sh.normalBias;
+    key.shadow.intensity = sh.intensity;
+    Object.assign(key.shadow.camera, { ...sh.frustum, near: 1, far: 80 });
+    key.shadow.camera.updateProjectionMatrix();
+    // rim lights
+    while (this.extraLights.children.length) this.extraLights.remove(this.extraLights.children[0]);
+    for (const l of look.rims) {
+      const d = new THREE.DirectionalLight(new THREE.Color().setRGB(...l.colour, THREE.LinearSRGBColorSpace), l.intensity);
+      d.position.set(...l.pos);
+      d.target.position.set(0, 11, 0);
+      this.extraLights.add(d, d.target);
+    }
+    // contact shadow and shadow-catching floor
+    this.drawContact(look.contact.alpha);
+    this.ground.visible = !!look.ground;
+    this.ground.material.opacity = look.ground?.opacity ?? 0;
+    if (look.ground) this.groundFade.value.set(...look.ground.fade);
+    this.ssao.set(look.ssao);
+    const dpr = typeof devicePixelRatio === 'number' ? devicePixelRatio : 1;
+    r.setPixelRatio(Math.min(Math.max(dpr, look.pixelRatio[0]), look.pixelRatio[1]));
+    if (!first && prev.material !== look.material) {
+      setMaterialResponse(look.material);
+      if (this.design) this.rebuildAll(this.design);
+    } else setMaterialResponse(look.material);
+    if (!first) {
+      this.resize();
+      this.requestFrame();
+    }
+  }
+
+  private rebuildAll(d: Design): void {
+    for (const id of BUILD_ORDER) this.rebuild(id, d);
+    this.onPartsChanged?.(d);
   }
 
   /* ---------- toolbar: take apart, cap lift, views (legacy 1677-1686) ---------- */
@@ -319,17 +407,12 @@ export class BrushScene {
 
   /* ---------- contact shadow (legacy 1880-1891) ---------- */
 
+  private readonly contactCanvas = document.createElement('canvas');
+
   private makeContact(): THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial> {
     // A soft pool of shade under the base grounds the brush, like a studio product shot.
-    const c = document.createElement('canvas');
+    const c = this.contactCanvas;
     c.width = c.height = 256;
-    const x = c.getContext('2d')!;
-    const g = x.createRadialGradient(128, 128, 0, 128, 128, 128);
-    g.addColorStop(0, 'rgba(60,45,40,.38)');
-    g.addColorStop(0.3, 'rgba(60,45,40,.16)');
-    g.addColorStop(1, 'rgba(60,45,40,0)');
-    x.fillStyle = g;
-    x.fillRect(0, 0, 256, 256);
     const m = new THREE.Mesh(
       new THREE.PlaneGeometry(1, 1),
       new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, toneMapped: false }),
@@ -340,21 +423,41 @@ export class BrushScene {
     return m;
   }
 
+  /** Radial pool of shade, `alpha` = opacity at the centre, at 30% and at the edge (parity .38 / .16 / 0). */
+  private drawContact(alpha: [number, number, number]): void {
+    const x = this.contactCanvas.getContext('2d')!;
+    x.clearRect(0, 0, 256, 256);
+    const g = x.createRadialGradient(128, 128, 0, 128, 128, 128);
+    g.addColorStop(0, `rgba(60,45,40,${alpha[0]})`);
+    g.addColorStop(0.3, `rgba(60,45,40,${alpha[1]})`);
+    g.addColorStop(1, `rgba(60,45,40,${alpha[2]})`);
+    x.fillStyle = g;
+    x.fillRect(0, 0, 256, 256);
+    this.contact.material.map!.needsUpdate = true;
+  }
+
   private placeContact(): void {
-    const cb = this._cb.makeEmpty(), contact = this.contact;
+    const cb = this._cb.makeEmpty(), contact = this.contact, lc = this.look.contact;
+    // parity keeps the r128 box (its floor sits ~1 unit under the base); the other looks seat it under the real base
+    const expand = lc.box === 'r128' ? expandByObjectR128 : expandByMeshes;
     PARTS.forEach((p) => {
-      if (p.id !== 'mount') expandByObjectR128(cb, this.groups[p.id]);
+      if (p.id !== 'mount') expand(cb, this.groups[p.id]);
     });
     if (cb.isEmpty()) {
       contact.visible = false;
+      this.ground.visible = false;
       return;
     }
     const w = Math.max(cb.max.x - cb.min.x, cb.max.z - cb.min.z);
     contact.visible = true;
-    contact.position.set((cb.min.x + cb.max.x) / 2, cb.min.y - 0.02, (cb.min.z + cb.max.z) / 2);
+    contact.position.set((cb.min.x + cb.max.x) / 2, cb.min.y - lc.drop, (cb.min.z + cb.max.z) / 2);
     const spread = 1 + 0.45 * this.ex + 0.08 * (this.lift / 3.2);
-    contact.scale.set(w * 1.7 * spread, w * 1.7 * spread, 1);
+    contact.scale.set(w * lc.scale * spread, w * lc.scale * spread, 1);
     contact.material.opacity = 1 - 0.38 * this.ex - 0.1 * (this.lift / 3.2);
+    if (this.look.ground) {
+      this.ground.visible = true;
+      this.ground.position.set(contact.position.x, cb.min.y - lc.drop - 0.01, contact.position.z);
+    }
   }
 
   /* ---------- picking ---------- */

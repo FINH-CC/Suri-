@@ -21,11 +21,37 @@ export function surfaceColour(hex: string): THREE.Color {
 }
 
 /**
+ * How the plastics answer the light, set by the active look (Task 19, `src/three/looks.ts`). Read when a material is
+ * built, so a look change rebuilds the parts. The parity values reproduce the Task 18 render exactly.
+ * - `roughness`: multiplies every plastic's roughness (1 = as authored).
+ * - `specular`: specularIntensity of the plastics (dielectric reflectance at normal incidence, 1 = from the ior).
+ * - `sheen`: the silicone parts' grazing sheen.
+ * - `satin`: the Satin finish (roughness, clear coat, clear coat roughness).
+ */
+export type MaterialResponse = {
+  roughness: number;
+  specular: number;
+  sheen: number;
+  satin: { roughness: number; clearcoat: number; clearcoatRoughness: number };
+};
+export const PARITY_RESPONSE: MaterialResponse = {
+  roughness: 1,
+  specular: 1,
+  sheen: 0.32,
+  satin: { roughness: 0.36, clearcoat: 0.3, clearcoatRoughness: 0.28 },
+};
+let response: MaterialResponse = PARITY_RESPONSE;
+export const setMaterialResponse = (r: MaterialResponse): void => {
+  response = r;
+};
+export const materialResponse = (): MaterialResponse => response;
+
+/**
  * Soft-touch silicone: a faint velvety sheen at grazing angles, tinted toward white.
  * r128 `sheen: Color(c * .32)` -> current `sheen: .32, sheenColor: c`. Spread into `plastic` options.
  */
 export const siliconeSheen = (hex: string): { sheen: number; sheenColor: THREE.Color } => ({
-  sheen: 0.32,
+  sheen: response.sheen,
   sheenColor: lin(mixHex(hex, '#ffffff', 0.55)),
 });
 
@@ -40,6 +66,8 @@ export const plastic = (hex: string, o: THREE.MeshPhysicalMaterialParameters = {
     ior: 1.326, // r128 reflectivity .35: F0 = 0.16 * .35^2 = 0.0196 -> ior (1 + 0.14) / (1 - 0.14)
     ...o,
   });
+  if (response.roughness !== 1) m.roughness = Math.min(1, m.roughness * response.roughness);
+  if (response.specular !== 1) m.specularIntensity = response.specular;
   // r128 sheen used the material's own roughness; current three has a separate sheenRoughness (default 1)
   if (m.sheen > 0 && o.sheenRoughness === undefined) m.sheenRoughness = m.roughness;
   return m;
@@ -72,10 +100,11 @@ export function applyFinish(m: THREE.MeshPhysicalMaterial, finish: FinishId): TH
   m.userData.finishable = true;
   m.userData.base ??= { roughness: m.roughness, clearcoat: m.clearcoat, clearcoatRoughness: m.clearcoatRoughness, sheenRoughness: m.sheenRoughness };
   if (finish === 'satin') {
-    m.roughness = 0.36;
-    m.clearcoat = 0.3;
-    m.clearcoatRoughness = 0.28;
-    if (m.sheen > 0) m.sheenRoughness = 0.36; // sheen follows the live roughness, as in r128
+    const s = response.satin;
+    m.roughness = s.roughness;
+    m.clearcoat = s.clearcoat;
+    m.clearcoatRoughness = s.clearcoatRoughness;
+    if (m.sheen > 0) m.sheenRoughness = s.roughness; // sheen follows the live roughness, as in r128
   } else if (finish === 'speckle') speckle(m);
   return m;
 }
