@@ -7,9 +7,6 @@
 /* soft colour pool behind the 3D brush */
 .stage::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
   background:radial-gradient(46% 40% at 50% 52%,var(--accent-soft) 0,rgba(232,228,222,0) 100%);opacity:.7;transition:opacity .4s}
-.round{position:absolute;top:50%;transform:translateY(-50%);width:52px;height:52px;border-radius:50%;border:0;background:#fff;color:#252525;cursor:pointer;display:grid;place-items:center;z-index:4}
-.round svg{width:20px;height:20px}
-.round.prev{left:28px}.round.next{right:28px}
 .toolbar{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;z-index:4;width:max-content;max-width:calc(100% - 24px)}
 /* SURI CTA: charcoal pill, Plain Regular 14/14, 15-35-13-35 padding */
 .tb-main{height:34px;padding:0 18px;border:0;border-radius:var(--pill);background:#252525;color:#fafafa;font-family:var(--font);font-size:13px;line-height:13px;font-weight:var(--reg);cursor:pointer;white-space:nowrap;transition:background .2s}
