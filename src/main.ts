@@ -19,6 +19,7 @@ import { projectStickers } from './three/stickers';
 import { createFlow } from './ui/flow';
 import type { Step } from './ui/flow';
 import * as intro from './ui/intro';
+import { mountDesign } from './ui/design';
 import { mountStart } from './ui/start';
 import { toast } from './ui/toast';
 
@@ -108,8 +109,8 @@ function wireStage(s: BrushScene, st: Store, flow: Flow, signal: AbortSignal, un
 // Created once: the step sections and bottom bar exist before the brush loads. Task 13-15 hook their screens in here.
 const flow: Flow = createFlow({ onEnter: (_step: Step) => {} });
 
-/** Resolve once the scene has rendered a frame; reject on a frame-loop error or after 10 s with nothing drawn. */
-function firstFrame(s: BrushScene, timeoutMs = 10_000): Promise<void> {
+/** Resolve once the scene has rendered a frame; reject on a frame-loop error or after 30 s with nothing drawn. */
+function firstFrame(s: BrushScene, timeoutMs = 30_000): Promise<void> {
   return new Promise((resolve, reject) => {
     const t0 = performance.now();
     s.lastError = null;
@@ -151,6 +152,7 @@ async function boot(): Promise<void> {
 
     unsubs.push(mountStart(st, s));
     wireStage(s, st, flow, ac.signal, unsubs);
+    unsubs.push(mountDesign(st, s)); // after wireStage: its canvas tap handler must see `placing` before a placed sticker clears it
     flow.goStep(1);
     s.frameDefault();
     await firstFrame(s);
