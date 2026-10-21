@@ -1,42 +1,75 @@
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { chromium } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
-const OUT = 'docs/reference';
+/*
+ * Captures the 17 parity shots (4 characters x 4 views + Nova taken apart).
+ *   npm run capture-reference                         legacy build (port 3241) -> docs/reference
+ *   npm run capture-reference -- --target new         new build (port 3240)    -> docs/reference/new
+ *   ... --out <dir> overrides the output folder; --url <base> overrides the port (e.g. a production preview).
+ * Both targets use the same crop: 1200x900 from the top-left of #stage at a 2100x1100 viewport, so the
+ * stage chrome (undo/redo, toolbar) appears in both sets.
+ */
+const arg = (name: string) => {
+  const i = process.argv.indexOf(`--${name}`);
+  return i > 0 ? process.argv[i + 1] : undefined;
+};
+const target = arg('target') ?? 'legacy';
+if (target !== 'legacy' && target !== 'new') throw new Error(`--target must be legacy or new, got ${target}`);
+const OUT = arg('out') ?? (target === 'legacy' ? 'docs/reference' : 'docs/reference/new');
+const URL = arg('url') ?? (target === 'legacy' ? 'http://localhost:3241/' : 'http://localhost:3240/');
 const ids = ['pip', 'puff', 'splash', 'nova'];
 const views = ['front', 'side', 'back', 'iso'];
 
-const browser = await chromium.launch({ headless: false });
-const page = await browser.newPage({ viewport: { width: 2100, height: 1100 } });
-await page.goto('http://localhost:3241/');
-await page.waitForSelector('#intro', { state: 'detached', timeout: 20000 });
+mkdirSync(OUT, { recursive: true });
 
-const shot = async (name: string) => {
-  const box = await page.locator('#stage').boundingBox();
-  if (!box || box.width < 1200 || box.height < 900) {
-    throw new Error(`stage too small: ${JSON.stringify(box)}`);
+/** Wait until the stage clip stops changing: two consecutive identical screenshots (camera lerp and pops done). */
+async function settled(page: Page, clip: { x: number; y: number; width: number; height: number }, timeoutMs = 10_000) {
+  const t0 = Date.now();
+  let prev = await page.screenshot({ clip });
+  while (Date.now() - t0 < timeoutMs) {
+    await page.waitForTimeout(150);
+    const next = await page.screenshot({ clip });
+    if (next.equals(prev)) return next;
+    prev = next;
   }
-  await page.screenshot({
-    path: `${OUT}/${name}.png`,
-    clip: { x: box.x, y: box.y, width: 1200, height: 900 },
-  });
-  console.log('wrote', name);
-};
-
-for (const id of ids) {
-  await page.click(`#chars .char[data-id="${id}"]`);
-  await page.waitForTimeout(800);
-  for (let i = 0; i < views.length; i++) {
-    await page.click(`#tb-views [data-view="${i}"]`);
-    await page.waitForTimeout(1200);
-    await shot(`${id}-${views[i]}`);
-  }
+  console.warn(`  not settled after ${timeoutMs} ms, using the last frame`);
+  return prev;
 }
 
-await page.click('#chars .char[data-id="nova"]');
-await page.waitForTimeout(800);
-await page.click('#tb-views [data-view="3"]');
-await page.waitForTimeout(1200);
-await page.click('#tb-apart');
-await page.waitForTimeout(1200);
-await shot('nova-apart');
+const browser = await chromium.launch({ headless: false });
+try {
+  // a fresh context each run: no stored design from an earlier session
+  const page = await browser.newPage({ viewport: { width: 2100, height: 1100 } });
+  await page.goto(URL);
+  await page.waitForSelector('#intro', { state: 'detached', timeout: 60_000 });
 
-await browser.close();
+  const clip = async () => {
+    const box = await page.locator('#stage').boundingBox();
+    if (!box || box.width < 1200 || box.height < 900) throw new Error(`stage too small: ${JSON.stringify(box)}`);
+    return { x: box.x, y: box.y, width: 1200, height: 900 };
+  };
+  const shot = async (name: string) => {
+    const png = await settled(page, await clip());
+    writeFileSync(`${OUT}/${name}.png`, png);
+    console.log('wrote', `${OUT}/${name}.png`);
+  };
+
+  for (const id of ids) {
+    await page.click(`#chars .char[data-id="${id}"]`);
+    await settled(page, await clip());
+    for (let i = 0; i < views.length; i++) {
+      await page.click(`#tb-views [data-view="${i}"]`);
+      await shot(`${id}-${views[i]}`);
+    }
+  }
+
+  await page.click('#chars .char[data-id="nova"]');
+  await settled(page, await clip());
+  await page.click('#tb-views [data-view="3"]');
+  await settled(page, await clip());
+  await page.click('#tb-apart');
+  await shot('nova-apart');
+} finally {
+  await browser.close();
+}
