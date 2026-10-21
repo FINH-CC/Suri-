@@ -325,7 +325,7 @@ export function mountDesign(store: Store, scene: BrushScene): () => void {
     if (next.finish !== prev.finish) renderFinishes(next);
     for (const p of PARTS) if (keyFor(p.id, next) !== cardKey[p.id]) renderCard(p.id, next);
     if (JSON.stringify(next.stickers) !== JSON.stringify(prev.stickers)) {
-      if (store.lastChange() !== 'edit') selected = -1; // undo/redo can change which sticker an index points at
+      if (store.lastChange() !== 'edit') selected = -1; // undo, redo and replace can change which sticker an index points at
       renderStickerList(next);
     }
   }));

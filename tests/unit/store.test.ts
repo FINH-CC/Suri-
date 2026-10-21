@@ -138,13 +138,29 @@ describe('store fixes', () => {
       store.update({ name: 'Nova' });
       expect(store.canRedo()).toBe(true);
     });
-    it('undo and redo never collapse with the next edit', () => {
+    it('an edit right after undo is a fresh step', () => {
       const { store, tick } = make();
-      store.update({ name: 'A' }); tick(1000);
+      store.update({ name: 'A' }); tick(10);
       store.undo(); tick(10);
-      store.update({ name: 'B' }); // fresh step despite being within 700 ms
-      store.undo();
+      store.update({ name: 'B' });
+      expect(store.undo()).toBe(true);
       expect(store.get().name).toBe('Nova');
+    });
+    it('an edit right after redo is a fresh step', () => {
+      const { store, tick } = make();
+      store.update({ name: 'A' }); tick(10);
+      store.undo(); tick(10);
+      store.redo(); tick(10);
+      store.update({ name: 'B' });
+      expect(store.undo()).toBe(true);
+      expect(store.get().name).toBe('A');
+    });
+    it('lastChange reports replace', () => {
+      const { store } = make();
+      store.replace({ ...store.get(), name: 'R' });
+      expect(store.lastChange()).toBe('replace');
+      store.update({ name: 'E' });
+      expect(store.lastChange()).toBe('edit');
     });
     it('caps both stacks at 50 and reports the cause', () => {
       const { store, tick } = make();

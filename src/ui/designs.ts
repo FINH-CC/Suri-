@@ -96,8 +96,15 @@ export function mountDesigns(store: Store, scene: BrushScene, signal: AbortSigna
   document.getElementById('open-designs')!.addEventListener('click', () => { render(); dlg.showModal(); }, on);
   document.getElementById('close-designs')!.addEventListener('click', () => dlg.close(), on);
   document.getElementById('save-design')!.addEventListener('click', async () => {
-    const d = storable(store.get());
-    const thumb = await jpeg(snapshot(scene, d, 'hero', 300, 300));
+    let d: Design, thumb: string;
+    try {
+      d = storable(store.get());
+      thumb = await jpeg(snapshot(scene, d, 'hero', 300, 300));
+    } catch (e) {
+      console.error(e);
+      toast("Couldn't save this design");
+      return;
+    }
     const list = load();
     list.unshift({ name: 'Design ' + (list.length + 1), state: d, thumb });
     if (persist(list.slice(0, MAX))) render();

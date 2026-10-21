@@ -78,6 +78,7 @@ function wireStage(s: BrushScene, st: Store, flow: Flow, signal: AbortSignal, un
   unsubs.push(st.subscribe(syncHistory));
   addEventListener('keydown', (e) => {
     if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
+    if ((document.getElementById('designs-dlg') as HTMLDialogElement).open) return;
     const el = document.activeElement as HTMLElement | null;
     if (el && (/^(INPUT|TEXTAREA)$/.test(el.tagName) || el.isContentEditable)) return;
     const k = e.key.toLowerCase();

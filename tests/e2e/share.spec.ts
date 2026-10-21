@@ -16,7 +16,7 @@ test.describe('share, my designs, undo and redo', () => {
   test.setTimeout(180_000);
   test.skip(({ isMobile }) => isMobile, 'desktop only');
 
-  test('share link round-trips the cap choice', async ({ page, context }) => {
+  test('share link round-trips the cap choice', async ({ page, context, browser }) => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     page.on('dialog', (d) => void d.dismiss());
     await boot(page);
@@ -26,11 +26,12 @@ test.describe('share, my designs, undo and redo', () => {
     await expect.poll(() => page.evaluate(() => location.hash)).toMatch(/^#d=/);
     await expect(page.locator('#toast')).toContainText('Link copied');
     const url = page.url();
-    const page2 = await context.newPage();
+    const ctx2 = await browser.newContext({ viewport: { width: 1280, height: 900 }, baseURL: 'http://localhost:3240' }); // fresh storage: only the hash can supply Cloud
+    const page2 = await ctx2.newPage();
     await boot(page2, url);
     await page2.locator('#step-next').click();
     await expect(page2.locator('#card-cap .tile', { hasText: 'Cloud' })).toHaveAttribute('aria-pressed', 'true');
-    await page2.close();
+    await ctx2.close();
   });
 
   test('save design lists a card, open restores it, delete removes it', async ({ page }) => {
@@ -106,5 +107,22 @@ test.describe('share, my designs, undo and redo', () => {
     await input.focus();
     await page.keyboard.press('ControlOrMeta+z');
     expect(await saved(page)).toBe(after);
+  });
+
+  test('undo clears the selected sticker so sliders cannot edit another', async ({ page }) => {
+    await boot(page);
+    await page.locator('#step-next').click();
+    const box = (await page.locator('#stage canvas').boundingBox())!;
+    const rows = page.locator('#sticker-list .list-row');
+    for (const dx of [0, 6]) {
+      await page.locator('#sticker-tiles .tile', { hasText: 'Star' }).click();
+      await page.mouse.click(box.x + box.width / 2 + dx, box.y + box.height / 2);
+      await page.waitForTimeout(900); // outside the 700 ms collapse window
+    }
+    await expect(rows).toHaveCount(2, { timeout: 15_000 });
+    await expect(rows.nth(1)).toHaveAttribute('aria-pressed', 'true');
+    await page.locator('#undo').click();
+    await expect(rows).toHaveCount(1);
+    await expect(rows.first()).toHaveAttribute('aria-pressed', 'false');
   });
 });
