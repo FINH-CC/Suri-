@@ -9,7 +9,7 @@ const el = () => document.getElementById('intro');
 const original = el()?.querySelector('.intro-inner')?.innerHTML ?? '';
 let finishing = false;
 
-/** Let the words land (1.5 s minimum on screen), jump "Lab", then slide the intro away and remove it. */
+/** Keep the hopping wordmark on screen for at least 1.5 s, give it one big jump, then slide the intro away and remove it. */
 export function finish(): void {
   const intro = el();
   if (!intro || finishing) return;

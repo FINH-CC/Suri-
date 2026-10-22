@@ -46,31 +46,39 @@ input[type=file]{display:none}
 html.intro-on,html.intro-on body{overflow:hidden}
 .intro{position:fixed;inset:0;z-index:200;display:grid;place-items:center;background:var(--bg);will-change:transform}
 .intro-inner{text-align:center;padding:0 24px}
-/* Meet / SURI wordmark / Lab, stacked and centred */
-.intro h2{margin:0;display:flex;flex-direction:column;align-items:center;gap:10px;font-weight:300;font-size:20px;line-height:1.2;color:var(--ink)}
+/* SURI wordmark hopping, "Lab" beneath */
+.intro h2{margin:0;display:flex;flex-direction:column;align-items:center;gap:14px;font-weight:500;font-size:22px;line-height:1;letter-spacing:.04em;color:var(--ink)}
 .intro .w{display:block;opacity:0;transform:translateY(.35em);animation:introIn .7s cubic-bezier(.2,.7,.2,1) forwards}
-.intro .w:nth-child(2){animation-delay:.12s}.intro .w:nth-child(3){animation-delay:.24s}
-.intro .logo img{display:block;height:28px;width:auto}
-.intro .lab{font-weight:500;transform-origin:50% 100%}
-.intro .season{margin:14px 0 0;font-size:11px;font-weight:300;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);opacity:0;animation:introFade .7s ease .7s forwards}
+.intro .lab{animation-delay:.2s}
+.intro .logo{padding-top:22px}
+.intro .logo img{display:block;height:31px;width:auto;transform-origin:50% 100%;
+  animation:logoHop 1.5s cubic-bezier(.3,0,.3,1) .7s infinite}
 .intro .err{margin:0 0 18px;font-weight:300;font-size:20px;line-height:1.2;color:var(--ink)}
 @keyframes introIn{to{opacity:1;transform:none}}
-@keyframes introFade{to{opacity:1}}
-/* Lab: squash, leap, stretch, land, settle */
-.intro.jump .lab{animation:labJump .9s cubic-bezier(.3,0,.3,1) forwards;opacity:1}
-@keyframes labJump{
+/* a playful hop while loading: squash, leap, stretch, land, settle, rest */
+@keyframes logoHop{
+  0%,62%,100%{transform:none}
+  8%{transform:translateY(0) scale(1.06,.9)}
+  24%{transform:translateY(-18px) scale(.96,1.06)}
+  34%{transform:translateY(-20px) scale(1,1)}
+  48%{transform:translateY(0) scale(1.06,.92)}
+  56%{transform:translateY(-2px) scale(.99,1.02)}}
+/* ready: one big jump, then the intro slides away */
+.intro.jump .logo img{animation:logoJump .9s cubic-bezier(.3,0,.3,1) forwards}
+@keyframes logoJump{
   0%{transform:none}
-  14%{transform:translateY(0) scale(1.12,.84)}
-  42%{transform:translateY(-.62em) scale(.92,1.1)}
-  58%{transform:translateY(-.66em) scale(1,1)}
-  78%{transform:translateY(0) scale(1.1,.88)}
-  90%{transform:translateY(-.05em) scale(.98,1.03)}
+  14%{transform:translateY(0) scale(1.1,.84)}
+  42%{transform:translateY(-34px) scale(.92,1.1)}
+  58%{transform:translateY(-36px) scale(1,1)}
+  78%{transform:translateY(0) scale(1.08,.88)}
+  90%{transform:translateY(-3px) scale(.98,1.03)}
   100%{transform:none}}
 .intro.out{transform:translateY(-100%);transition:transform .95s cubic-bezier(.76,0,.24,1)}
 @media (prefers-reduced-motion:reduce){
-  .intro .w,.intro .season{animation:none;opacity:1;transform:none}
-  .intro.jump .lab{animation:none}
+  .intro .w{animation:none;opacity:1;transform:none}
+  .intro .logo img,.intro.jump .logo img{animation:none}
   .intro.out{transform:none;opacity:0;transition:opacity .4s ease}}
+@media (max-width:520px){.intro .logo img{height:25px}.intro h2{font-size:20px}}
 
 /* ---------- dialog ---------- */
 dialog{border:0;padding:0;background:var(--surface);color:var(--ink);width:min(560px,calc(100% - 32px));max-height:calc(100% - 64px);border-radius:var(--box)}
