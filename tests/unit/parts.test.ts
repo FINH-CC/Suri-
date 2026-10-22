@@ -31,10 +31,11 @@ const instanced = (o: THREE.Object3D) => meshes(o).filter((m) => (m as THREE.Ins
 const spheres = (o: THREE.Object3D) => meshes(o).filter((m) => m.geometry instanceof THREE.SphereGeometry);
 
 describe('part builders', () => {
-  it('handle: every non-button handle CAD part, shared geometry kept', () => {
+  it('handle: every non-button handle CAD part (shared geometry kept) plus the pinhole lens', () => {
     const g = buildHandle('core', '#7fae7f', ctx);
-    expect(meshes(g).length).toBe(ctx.cad.handle.filter((c) => c.role !== 'button').length);
-    expect(meshes(g).every((m) => m.userData.keepGeo)).toBe(true);
+    const cad = meshes(g).filter((m) => m.userData.keepGeo);
+    expect(cad.length).toBe(ctx.cad.handle.filter((c) => c.role !== 'button').length);
+    expect(meshes(g).length).toBe(cad.length + 1);
   });
   it('button: only the button CAD part', () => {
     expect(meshes(buildButton('core', '#ff0000', ctx)).length).toBe(ctx.cad.handle.filter((c) => c.role === 'button').length);
@@ -50,10 +51,10 @@ describe('part builders', () => {
     expect(spheres(plain).length).toBe(0);
     expect(meshes(buildHead('ears', '#ffffff', ctx)).length).toBe(meshes(plain).length);
   });
-  it('grip dots: InstancedMesh with 100 nubs', () => {
+  it('grip dots: InstancedMesh with 100 nubs, less the ones over the wordmark', () => {
     const im = instanced(buildGrip('dots', '#e0b0c0', ctx));
     expect(im.length).toBe(1);
-    expect(im[0].count).toBe(100);
+    expect(im[0].count).toBe(99);
   });
   it('grip rings: sleeve + 4 accent rings', () => {
     expect(meshes(buildGrip('rings', '#e0b0c0', ctx)).length).toBe(5);

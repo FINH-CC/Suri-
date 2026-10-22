@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { deboss, wordmarkRect } from '../details';
 import { applyFinish, lum, mixHex, plastic, siliconeSheen } from '../materials';
 import type { BuildCtx } from './context';
 
@@ -18,6 +19,10 @@ export function buildGrip(s: string, hex: string, ctx: BuildCtx): THREE.Group {
     plastic(hex, { side: THREE.DoubleSide, roughness: 0.55, clearcoat: 0.15, ...siliconeSheen(hex) }),
     ctx.finish,
   );
+  // the SURI deboss on the front of the lower handle, reading bottom to top (Task 22); on Rings it fits between the
+  // first two bands, elsewhere it is ~15% of the handle height
+  const wm = s === 'rings' ? wordmarkRect(2.6, 1.36) : wordmarkRect(2.3, 2.0);
+  deboss(mat, wm);
   const accent = plastic(mixHex(hex, lum(hex) > 0.45 ? '#252525' : '#ffffff', lum(hex) > 0.45 ? 0.25 : 0.5));
   const y0 = 1.6;
   const y1 = 8.7; // hand zone: above the tapered base, below the button
@@ -80,22 +85,23 @@ export function buildGrip(s: string, hex: string, ctx: BuildCtx): THREE.Group {
     const nub = plastic(mixHex(hex, lum(hex) > 0.45 ? '#252525' : '#ffffff', 0.1), { roughness: 0.55, ...siliconeSheen(hex) });
     const rowsN = 10;
     const perRow = 10;
-    const im = new THREE.InstancedMesh(new THREE.SphereGeometry(0.12, 20, 12), nub, rowsN * perRow);
-    const mm = new THREE.Matrix4();
+    const mats: THREE.Matrix4[] = [];
     const q = new THREE.Quaternion();
     const Z = new THREE.Vector3(0, 0, 1);
     const sc = new THREE.Vector3(1, 1, 0.8);
-    let i = 0;
     for (let row = 0; row < rowsN; row++)
       for (let k = 0; k < perRow; k++) {
         const a = -Math.PI + ((k + (row % 2) * 0.5) * Math.PI * 2) / perRow;
         const y = y0 + 0.42 + row * ((y1 - y0 - 0.84) / (rowsN - 1));
         const r = rTheta(y, a) + T + belly(y) + 0.01;
+        // leave the wordmark clear: no nub over the letters
+        if (Math.cos(a) > 0 && Math.abs(r * Math.sin(a)) < wm.wid / 2 + 0.13 && y > wm.y0 - 0.13 && y < wm.y0 + wm.len + 0.13) continue;
         const n = new THREE.Vector3(Math.sin(a), 0, Math.cos(a));
         q.setFromUnitVectors(Z, n);
-        mm.compose(new THREE.Vector3(r * Math.sin(a), y, r * Math.cos(a)), q, sc);
-        im.setMatrixAt(i++, mm);
+        mats.push(new THREE.Matrix4().compose(new THREE.Vector3(r * Math.sin(a), y, r * Math.cos(a)), q, sc));
       }
+    const im = new THREE.InstancedMesh(new THREE.SphereGeometry(0.12, 20, 12), nub, mats.length);
+    mats.forEach((m, j) => im.setMatrixAt(j, m));
     // keep an instanceColor like the tufts so shared shader programs always find it
     const wc = new THREE.Color(1, 1, 1);
     for (let j = 0; j < im.count; j++) im.setColorAt(j, wc);

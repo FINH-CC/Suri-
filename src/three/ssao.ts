@@ -49,7 +49,8 @@ const BLUR_FS = `uniform sampler2D tAO;uniform vec2 texel;uniform float strength
 
 export class SSAO {
   private readonly normalMats: Partial<Record<THREE.Side, THREE.MeshNormalMaterial>> = {};
-  // bristle tufts write one flat normal, so the bristle field reads as one clean shape instead of a dark mass
+  // meshes marked `flatAO` write one flat normal, so they read as one clean shape. Bristle tufts no longer do (Task 22):
+  // the client's reference shows dark occlusion between the rows of tufts.
   private readonly flatNormalMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.5, 0.5, 1), toneMapped: false });
   private readonly aoMat = new THREE.ShaderMaterial({
     uniforms: {
@@ -177,7 +178,7 @@ export class SSAO {
     renderer.setClearColor(0x000000, 1);
     meshes.forEach((o, i) => {
       if (orig[i].transparent || o.userData.isSticker) o.visible = false;
-      else o.material = (o as THREE.InstancedMesh).isInstancedMesh ? this.flatNormalMat : this.normalMatFor(orig[i].side);
+      else o.material = o.userData.flatAO ? this.flatNormalMat : this.normalMatFor(orig[i].side);
     });
     renderer.setRenderTarget(rtN);
     renderer.clear();
