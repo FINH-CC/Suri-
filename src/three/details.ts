@@ -24,8 +24,8 @@ const smooth = (a: number, b: number, x: number) => {
  */
 
 /** Where the tip tint starts (fraction of the tuft length from the base) and how far toward the head colour it goes. */
-export const TIP_START = 0.8;
-export const TIP_STRENGTH = 0.3;
+export const TIP_START = 0.9;
+export const TIP_STRENGTH = 0.22;
 
 /** Tuft colour at `t` along its length (0 base, 1 tip): off-white, with a subtle hint of the head colour at the tip. */
 export function tipTint(t: number, headHex: string): string {

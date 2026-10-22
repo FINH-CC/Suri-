@@ -17,7 +17,9 @@ export function buildHead(_style: string, hex: string, ctx: BuildCtx): THREE.Gro
   // a round bundle (radius 0.06 on a 0.145 pitch, so a clear shadowed gap between tufts) ending in a full, round, glossy dome (Task 22,
   // after the client's bristle reference)
   const R = 0.06, D = L - R; // the dome is a hemisphere of the tuft's radius
-  const prof: [number, number][] = [[0, 0], [R, 0], [R, D]];
+  // rings every 5% up the side, so the baked occlusion and the tip tint follow their curves instead of one long ramp
+  const prof: [number, number][] = [[0, 0]];
+  for (let k = 0; k <= 16; k++) prof.push([R, (D * k) / 16]);
   for (let k = 1; k <= 8; k++) prof.push([R * Math.cos((k * Math.PI) / 16), D + R * Math.sin((k * Math.PI) / 16)]);
   const tg = new THREE.LatheGeometry(prof.map(([r, y]) => new THREE.Vector2(r, y)), 24);
   tg.rotateX(Math.PI / 2); // grows along +z

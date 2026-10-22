@@ -22,10 +22,11 @@ describe('bristle tip tint and shade', () => {
   });
   it('only hints at the head colour at the very tip', () => {
     for (const [hex] of SWATCHES) expect(tipTint(1, hex)).toBe(mixHex(BRISTLE, hex, TIP_STRENGTH));
-    expect(TIP_STRENGTH).toBeLessThanOrEqual(0.35);
+    expect(TIP_STRENGTH).toBeLessThanOrEqual(0.25);
+    expect(TIP_START).toBeGreaterThanOrEqual(0.9);
   });
   it('blends monotonically toward the tip', () => {
-    const g = [0.82, 0.88, 0.94, 1].map((t) => parseInt(tipTint(t, '#e86239').slice(3, 5), 16)); // green channel falls
+    const g = [0.92, 0.95, 0.98, 1].map((t) => parseInt(tipTint(t, '#e86239').slice(3, 5), 16)); // green channel falls
     for (let i = 1; i < g.length; i++) expect(g[i]).toBeLessThan(g[i - 1]);
   });
   it('baked occlusion is dark at the pad, full white at the tip, monotonic', () => {
@@ -103,7 +104,7 @@ describe('shader patches', () => {
   it('compose by key, and a finish change keeps the detail patches', () => {
     const m = addPatch(plastic('#adaae1'), 'deboss', () => {});
     applyFinish(m, 'speckle');
-    expect(m.customProgramCacheKey()).toBe('deboss|speckle');
+    expect(m.customProgramCacheKey()).toBe('speckle|deboss'); // canonical: finish first
     clearFinishPatches(m);
     expect(m.customProgramCacheKey()).toBe('deboss');
     addPatch(m, 'deboss', () => {});
