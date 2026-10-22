@@ -5,8 +5,8 @@ import { WORDMARK_MASK } from './wordmark-mask';
 
 /*
  * Task 22: the small details of the client's product renders, drawn in the shaders from object-space position (the
- * CAD has no UVs): the SURI deboss on the lower handle, the button's frosted rim around its pad, the indicator dot,
- * the hairline seam where the head meets the handle, and the bristle tips tinted with the head colour.
+ * CAD has no UVs): the SURI deboss on the lower handle (the grip sleeve), the indicator dot, the hairline seam where
+ * the head meets the handle, and the bristle tufts (shape, baked occlusion, a hint of the head colour at the tip).
  * Every number that places a detail on the CAD is measured from src/assets/model/brush.glb (Task 22 report).
  */
 

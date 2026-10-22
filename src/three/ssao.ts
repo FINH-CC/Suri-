@@ -49,9 +49,8 @@ const BLUR_FS = `uniform sampler2D tAO;uniform vec2 texel;uniform float strength
 
 export class SSAO {
   private readonly normalMats: Partial<Record<THREE.Side, THREE.MeshNormalMaterial>> = {};
-  // meshes marked `flatAO` write one flat normal, so they read as one clean shape. Bristle tufts no longer do (Task 22):
-  // the client's reference shows dark occlusion between the rows of tufts.
-  private readonly flatNormalMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.5, 0.5, 1), toneMapped: false });
+  // every mesh, bristle tufts included, writes its real normals: the client's reference shows dark occlusion between
+  // the rows of tufts (Task 22; tufts used to write one flat normal)
   private readonly aoMat = new THREE.ShaderMaterial({
     uniforms: {
       tN: { value: null },
@@ -100,7 +99,6 @@ export class SSAO {
     this.rtAO?.dispose();
     this.rtN = this.rtAO = null;
     Object.values(this.normalMats).forEach((m) => m?.dispose());
-    this.flatNormalMat.dispose();
     this.aoMat.dispose();
     this.aoBlurMat.dispose();
     for (const sc of [this.aoScene, this.aoBlurScene]) sc.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
@@ -178,7 +176,7 @@ export class SSAO {
     renderer.setClearColor(0x000000, 1);
     meshes.forEach((o, i) => {
       if (orig[i].transparent || o.userData.isSticker) o.visible = false;
-      else o.material = o.userData.flatAO ? this.flatNormalMat : this.normalMatFor(orig[i].side);
+      else o.material = this.normalMatFor(orig[i].side);
     });
     renderer.setRenderTarget(rtN);
     renderer.clear();
