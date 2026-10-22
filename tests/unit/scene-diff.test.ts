@@ -22,7 +22,7 @@ describe('scene diff', () => {
   });
   it('a head style change rebuilds head then cap', () => {
     const n = clone(DEFAULT);
-    n.parts.head = n.parts.head === 'ears' ? 'spots' : 'ears';
+    n.parts.head = 'upload'; // the only other head is an uploaded one
     expect(partsToRebuild(DEFAULT, n)).toEqual(['head', 'cap']);
   });
   it('a finish change rebuilds nothing and is finish-only', () => {

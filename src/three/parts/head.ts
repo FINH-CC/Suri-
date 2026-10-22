@@ -1,9 +1,10 @@
 import * as THREE from 'three';
-import { INK, lin, lum, materialResponse, mixHex, plastic, speckle } from '../materials';
+import { lin, materialResponse, mixHex, plastic, speckle } from '../materials';
 import { cadMesh } from '../model';
-import { sphere, type BuildCtx } from './context';
+import type { BuildCtx } from './context';
 
-export function buildHead(s: string, hex: string, ctx: BuildCtx): THREE.Group {
+/** The head has no shapes, only colour: every style builds the plain head. */
+export function buildHead(_style: string, hex: string, ctx: BuildCtx): THREE.Group {
   const { dim: DIM, tufts: T } = ctx;
   const g = new THREE.Group();
   const mat = speckle(plastic(hex, { roughness: 0.72 }));
@@ -50,21 +51,5 @@ export function buildHead(s: string, hex: string, ctx: BuildCtx): THREE.Group {
   });
   if (tufts.instanceColor) tufts.instanceColor.needsUpdate = true;
   g.add(tufts);
-  // character cues on the back of the head pad
-  const ink = plastic(INK, { roughness: 0.3, clearcoat: 0.8 });
-  const bz = DIM.padBackZ - 0.01;
-  const cy = 21.25;
-  if (s === 'ears') {
-    g.add(sphere(0.05, ink, [-0.17, cy + 0.25, bz], [1, 1, 0.5]));
-    g.add(sphere(0.05, ink, [0.17, cy + 0.25, bz], [1, 1, 0.5]));
-    g.add(sphere(0.2, mat, [-0.36, 22.1, -0.04], [1, 1.3, 0.72]));
-    g.add(sphere(0.2, mat, [0.36, 22.1, -0.04], [1, 1.3, 0.72]));
-  }
-  if (s === 'spots') {
-    const sp = plastic(mixHex(hex, lum(hex) > 0.5 ? '#252525' : '#ffffff', 0.35));
-    [[-0.25, 21.85], [0.15, 22.0], [0.28, 21.0], [-0.12, 20.65], [0.02, 21.4]].forEach(([x, y]) =>
-      g.add(sphere(0.075, sp, [x, y, bz + 0.01], [1, 1, 0.3])),
-    );
-  }
   return g;
 }

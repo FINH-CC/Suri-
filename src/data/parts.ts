@@ -11,7 +11,7 @@ export interface PartDef {
 
 export const PARTS: PartDef[] = [
   { id: 'cap', name: 'Cap', sub: 'Soft silicone cap that slides down over the bristles. Pick a shape.', options: { bubble: 'Pebble', sprout: 'Sprout', bear: 'Bear', hat: 'Hat', bunny: 'Bunny', cloud: 'Cloud' } },
-  { id: 'head', name: 'Head', sub: 'Changeable head with subtle character cues.', options: { plain: 'Plain', ears: 'Ears', spots: 'Spots' } },
+  { id: 'head', name: 'Head', sub: 'Changeable head with subtle character cues.', options: { plain: 'Plain' } },
   { id: 'grip', name: 'Grip', sub: 'A sleeve that changes the look and feel of the handle.', options: { smooth: 'Smooth', ribs: 'Ribs', dots: 'Dots', rings: 'Rings' } },
   { id: 'handle', name: 'Handle', sub: 'The core. Houses the motor and battery.', options: { core: 'Core' } },
   { id: 'button', name: 'Button', sub: 'The power button. Match it or make it pop.', options: { core: 'Core' } },

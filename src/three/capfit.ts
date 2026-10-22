@@ -1,5 +1,5 @@
 /* Cap fit (legacy/index.html 779–835).
-   Measures the real head (CAD + bristle tufts + the chosen head's ears/face) in horizontal slices around the
+   Measures the real head (CAD + bristle tufts) in horizontal slices around the
    bristle axis, giving a radius for every angle and height. Every cap shape is built OUTWARD from this,
    so all of them clear the bristles by the same margin and the opening hugs the neck.
    Unlike legacy, nothing is cached here and the caller builds (and disposes) the head: the scene reads the

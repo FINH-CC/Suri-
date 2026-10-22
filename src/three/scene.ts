@@ -277,7 +277,7 @@ export class BrushScene {
   }
 
   private capCoreFor(d: Design, ctx: BuildCtx): CapCore {
-    if (d.parts.head !== 'upload') return this.capFit[d.parts.head];
+    if (d.parts.head !== 'upload') return this.capFit[d.parts.head] ?? this.capFit.plain; // only plain is built in
     const geo = this.uploads.head;
     if (!geo) return this.capFit.plain;
     if (this.uploadCap?.geo !== geo) {

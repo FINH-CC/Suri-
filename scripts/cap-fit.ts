@@ -1,6 +1,6 @@
 /**
- * Precompute the cap cavity core for each built-in head style and write src/assets/model/cap-fit.json.
- * The scene reads this for plain|ears|spots; an uploaded head gets its core computed live with the same module.
+ * Precompute the cap cavity core for the built-in (plain) head and write src/assets/model/cap-fit.json.
+ * The scene reads this for the plain head; an uploaded head gets its core computed live with the same module.
  * Run: npm run cap-fit
  */
 import { writeFileSync } from 'node:fs';
@@ -12,7 +12,7 @@ import { dispose } from '../src/three/parts/index';
 import { loadCadFromGlb } from './lib/load-cad-node';
 
 const OUT = 'src/assets/model/cap-fit.json';
-const STYLES = ['plain', 'ears', 'spots'];
+const STYLES = ['plain'];
 
 const { cad, meta } = await loadCadFromGlb('src/assets/model/brush.glb', 'src/assets/model/brush-meta.json');
 const out: Record<string, CapCore> = {};

@@ -40,19 +40,15 @@ describe('part builders', () => {
     expect(meshes(buildButton('core', '#ff0000', ctx)).length).toBe(ctx.cad.handle.filter((c) => c.role === 'button').length);
   });
   it('head: one tuft InstancedMesh with one instance per tuft', () => {
-    const im = instanced(buildHead('ears', '#ffffff', ctx));
+    const im = instanced(buildHead('plain', '#ffffff', ctx));
     expect(im.length).toBe(1);
     expect(im[0].count).toBe(59);
     expect(im[0].count).toBe(ctx.tufts.length);
   });
-  it('head ears: adds 4 spheres (two ink dots, two ear blobs) over plain', () => {
+  it('head: plain only, no shapes on the pad (an old style name builds the plain head)', () => {
     const plain = buildHead('plain', '#ffffff', ctx);
-    const ears = buildHead('ears', '#ffffff', ctx);
-    expect(meshes(ears).length - meshes(plain).length).toBe(4);
-    expect(spheres(ears).length - spheres(plain).length).toBe(4);
-  });
-  it('head spots: adds 5 spots', () => {
-    expect(meshes(buildHead('spots', '#ffffff', ctx)).length - meshes(buildHead('plain', '#ffffff', ctx)).length).toBe(5);
+    expect(spheres(plain).length).toBe(0);
+    expect(meshes(buildHead('ears', '#ffffff', ctx)).length).toBe(meshes(plain).length);
   });
   it('grip dots: InstancedMesh with 100 nubs', () => {
     const im = instanced(buildGrip('dots', '#e0b0c0', ctx));

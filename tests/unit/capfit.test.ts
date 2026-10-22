@@ -44,8 +44,8 @@ describe('cap fit', () => {
     expect(Object.keys(live).sort()).toEqual(Object.keys(ref).sort());
     for (const k of Object.keys(ref) as (keyof CapCore)[]) expect(Math.abs(live[k] - ref[k])).toBeLessThan(1e-6);
   });
-  it('cap-fit.json covers plain, ears, spots', () => {
-    expect(Object.keys(committed).sort()).toEqual(['ears', 'plain', 'spots']);
+  it('cap-fit.json covers the plain head only (the head has no shapes)', () => {
+    expect(Object.keys(committed)).toEqual(['plain']);
   });
 });
 
