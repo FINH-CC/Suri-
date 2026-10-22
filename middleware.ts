@@ -4,7 +4,7 @@
  * The decision itself is lib/gate.ts decide() (unit tested).
  */
 import { next } from '@vercel/functions';
-import { decide, isGatedPath, tokenFor } from './lib/gate';
+import { decide, isGatedPath, tokenFor } from './lib/gate.js';
 
 export const config = { matcher: '/assets/:path*' };
 

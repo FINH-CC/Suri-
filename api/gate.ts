@@ -1,4 +1,4 @@
-import { handleGate } from '../lib/handlers';
+import { handleGate } from '../lib/handlers.js';
 
 /** GET /api/gate → { unlocked: boolean }. SURI_PASSWORD is set in Vercel → Project → Settings → Environment Variables. */
 export function GET(request: Request): Promise<Response> {

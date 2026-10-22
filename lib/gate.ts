@@ -83,8 +83,13 @@ export function unlockCookies(token: string, secure = true): string[] {
   const s = secure ? '; Secure' : '';
   return [
     `${GATE_COOKIE}=${token}; Path=/; HttpOnly${s}; SameSite=Lax; Max-Age=${MAX_AGE}`,
-    `${HINT_COOKIE}=1; Path=/${s}; SameSite=Lax; Max-Age=${MAX_AGE}`,
+    hintCookie(secure),
   ];
+}
+
+/** Set-Cookie value for the readable hint alone (also refreshed by /api/gate while unlocked). */
+export function hintCookie(secure = true): string {
+  return `${HINT_COOKIE}=1; Path=/${secure ? '; Secure' : ''}; SameSite=Lax; Max-Age=${MAX_AGE}`;
 }
 
 /** Set-Cookie value that clears the hint (sent when the gate reports locked, e.g. after a password change). */

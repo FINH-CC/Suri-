@@ -2,8 +2,8 @@
  * Web-standard request handlers for /api/gate and /api/unlock. The Vercel Functions in api/ call these, and so does
  * the dev-only emulation in vite.config.ts, so local tests run the same code that ships.
  */
-import { clearHintCookie, isUnlocked, tokenFor, unlockCookies } from './gate';
-import { WRONG_DELAY_MS, passwordMatches } from './password';
+import { clearHintCookie, hintCookie, isUnlocked, tokenFor, unlockCookies } from './gate.js';
+import { WRONG_DELAY_MS, passwordMatches } from './password.js';
 
 export interface GateEnv {
   password: string | undefined;
@@ -25,7 +25,7 @@ export async function handleGate(req: Request, env: GateEnv): Promise<Response> 
   if (!env.password) return json(503, { error: 'not-configured' });
   const unlocked = await isUnlocked(req.headers.get('cookie'), env.password);
   const headers = new Headers();
-  if (!unlocked) headers.append('Set-Cookie', clearHintCookie(env.secure ?? true));
+  headers.append('Set-Cookie', unlocked ? hintCookie(env.secure ?? true) : clearHintCookie(env.secure ?? true));
   return json(200, { unlocked }, headers);
 }
 

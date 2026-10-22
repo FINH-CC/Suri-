@@ -21,6 +21,7 @@ import { projectStickers, warmStickerProgram } from './three/stickers';
 import { createFlow } from './ui/flow';
 import type { Step } from './ui/flow';
 import * as intro from './ui/intro';
+import * as gate from './ui/gate';
 import { mountDesign } from './ui/design';
 import { mountDesigns } from './ui/designs';
 import { mountShare } from './ui/share';
@@ -172,17 +173,43 @@ function firstFrame(s: BrushScene, timeoutMs = 30_000): Promise<void> {
   });
 }
 
+/**
+ * Password gate (Task 23): ask the server first; a locked visitor gets the field on the loader. Resolves true when the
+ * app may load, false when the gate is not configured (the loader then says so and stays). A network failure throws,
+ * so boot() shows the load error and Retry re-checks the gate.
+ */
+async function passGate(): Promise<boolean> {
+  if (!gate.GATE_ON) return true;
+  const state = await gate.checkGate();
+  if (state === 'unlocked') return true;
+  if (state === 'locked' && (await intro.askPassword(gate.tryUnlock)) === 'ok') {
+    unlockedHere = true;
+    return true;
+  }
+  intro.notConfigured();
+  return false;
+}
+let unlockedHere = false;
+
+/** The model URL to fetch. If the HTML preloaded it while this visitor was still locked (a stale hint cookie), that
+    preload holds a 401 the fetch could be handed, so ask for a distinct URL once. */
+function modelUrl(url: string): string {
+  const stale = unlockedHere && document.querySelector('link[rel="preload"][as="fetch"]');
+  return stale ? `${url}${url.includes('?') ? '&' : '?'}unlocked=1` : url;
+}
+
 async function boot(): Promise<void> {
   const ac = new AbortController();
   const unsubs: (() => void)[] = [];
   try {
+    if (!(await passGate())) return;
     store ??= createStore(readInitial(), {
       save: (json) => { try { localStorage.setItem(KEY, json); } catch { /* storage blocked or full */ } },
       uploads: () => Object.fromEntries(Object.keys(scene?.uploads ?? {}).map((k) => [k, true])) as Partial<Record<PartId, boolean>>,
     });
     const st = store;
     const [model, capFit] = await Promise.all([
-      loadModel(brushGlbUrl, brushMetaUrl, () => {}),
+      loadModel(modelUrl(brushGlbUrl), brushMetaUrl, () => {}),
       fetch(capFitUrl).then((r) => {
         if (!r.ok) throw new Error(`cap-fit.json: HTTP ${r.status}`);
         return r.json() as Promise<Record<string, CapCore>>;
