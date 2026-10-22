@@ -57,6 +57,27 @@ test.describe('share, my designs, undo and redo', () => {
     await expect(page.locator('#card-cap .tile', { hasText: 'Bear' })).toHaveAttribute('aria-pressed', 'true');
   });
 
+  test('a share link survives a reload with no edit (fresh browser)', async ({ page, context, browser }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    page.on('dialog', (d) => void d.dismiss());
+    await boot(page);
+    await page.locator('#step-next').click();
+    await page.locator('#card-cap .tile', { hasText: 'Cloud' }).click();
+    await page.locator('#share').click();
+    await expect(page.locator('#toast')).toContainText('Link copied');
+    const url = await page.evaluate(() => navigator.clipboard.readText());
+    const ctx2 = await browser.newContext({ viewport: { width: 1280, height: 900 }, baseURL: 'http://localhost:3240' });
+    const page2 = await ctx2.newPage();
+    await boot(page2, url);
+    await expect.poll(() => page2.evaluate(() => location.hash)).toBe('');
+    await expect.poll(() => page2.evaluate((k) => JSON.parse(localStorage.getItem(k) ?? '{}').parts?.cap, KEY)).toBe('cloud');
+    await page2.reload();
+    await expect(page2.locator('#intro')).toHaveCount(0, { timeout: BOOT });
+    await page2.locator('#step-next').click();
+    await expect(page2.locator('#card-cap .tile', { hasText: 'Cloud' })).toHaveAttribute('aria-pressed', 'true');
+    await ctx2.close();
+  });
+
   test('save design lists a card, open restores it, delete removes it', async ({ page }) => {
     await boot(page);
     await page.locator('#open-designs').click();

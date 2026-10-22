@@ -54,7 +54,10 @@ function readInitial(): Design {
   if (!hashed) {
     try { stored = JSON.parse(localStorage.getItem(KEY) ?? 'null'); } catch { /* blocked or corrupt storage */ }
   }
-  return validate(hashed ?? stored ?? DEFAULT);
+  const d = validate(hashed ?? stored ?? DEFAULT);
+  // and save it now, so a reload before any edit still reopens the shared design
+  if (hashed) try { localStorage.setItem(KEY, JSON.stringify(d)); } catch { /* storage blocked or full */ }
+  return d;
 }
 
 /** The picked character's colour runs through the UI (legacy setAccent 651). */
