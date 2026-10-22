@@ -53,7 +53,11 @@
 .char:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .char img{width:100%;aspect-ratio:1;object-fit:contain;background:var(--stage);border-radius:var(--card);margin-bottom:6px}
 .char strong{font-size:var(--t-title);line-height:1.2;font-weight:400;color:var(--ink);padding:0 4px}
-.char span:not(.badge){font-size:var(--t-body);line-height:1.45;color:var(--muted);padding:0 4px}
+.char .txt{display:flex;flex-direction:column;gap:2px}
+.char .txt span{font-size:var(--t-body);line-height:1.45;color:var(--muted);padding:0 4px}
+/* Start from blank: spans both columns, image left and text right */
+.char.blank{grid-column:1/-1;flex-direction:row;align-items:center;gap:12px;padding:6px}
+.char.blank img{width:calc(50% - 12px);flex:none;margin-bottom:0}
 .char .badge{top:14px;right:14px;color:#fafafa}
 
 /* ---------- 3 / Name it ---------- */

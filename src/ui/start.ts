@@ -21,9 +21,9 @@ export function mountStart(store: Store): () => void {
     const c = CHARACTERS[id];
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'char';
+    b.className = id === 'blank' ? 'char blank' : 'char'; // blank spans the grid below the four characters
     b.dataset.id = id;
-    b.innerHTML = `${id !== 'blank' ? '<span class="badge">Season 01</span>' : ''}<img src="${tileUrl(`char-${id}`)}" alt="" width="192" height="192" loading="lazy"><strong>${id === 'blank' ? 'Start from blank' : esc(c.name)}</strong><span>${esc(c.tag)}</span>`;
+    b.innerHTML = `${id !== 'blank' ? '<span class="badge">Season 01</span>' : ''}<img src="${tileUrl(`char-${id}`)}" alt="" width="192" height="192" loading="lazy"><span class="txt"><strong>${id === 'blank' ? 'Start from blank' : esc(c.name)}</strong><span>${esc(c.tag)}</span></span>`;
     b.addEventListener('click', () => store.replace(characterDesign(id)));
     el.appendChild(b);
     return b;

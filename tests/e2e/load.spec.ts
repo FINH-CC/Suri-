@@ -48,4 +48,17 @@ test.describe('app shell', () => {
       .poll(() => page.evaluate(() => localStorage.getItem('suri-kids-current') ?? ''))
       .toContain('"character":"puff"');
   });
+  test('start from blank spans both columns, below the four characters, image left of the text', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('#intro')).toHaveCount(0, { timeout: BOOT });
+    const grid = (await page.locator('#chars').boundingBox())!;
+    const blank = (await page.locator('#chars .char.blank').boundingBox())!;
+    const nova = (await page.locator('#chars .char[data-id="nova"]').boundingBox())!;
+    expect(Math.abs(blank.width - grid.width)).toBeLessThan(2);
+    expect(blank.y).toBeGreaterThanOrEqual(nova.y + nova.height);
+    const img = (await page.locator('#chars .char.blank img').boundingBox())!;
+    const txt = (await page.locator('#chars .char.blank .txt').boundingBox())!;
+    expect(img.x + img.width).toBeLessThanOrEqual(txt.x);
+    await expect(page.locator('#chars .char.blank strong')).toHaveText('Start from blank');
+  });
 });
