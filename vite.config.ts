@@ -28,6 +28,8 @@ export default defineConfig({
   plugins: [preloadBrush()],
   // Never inline: every model, tile and font ships as its own content-hashed file under /assets (cached immutable).
   build: { assetsInlineLimit: 0 },
-  server: { port: 3240 },
+  // `npm run tiles` writes src/assets/tiles while the page it drives is open on this server: watching those files
+  // reloaded the page mid-run. New tiles show after a manual reload.
+  server: { port: 3240, watch: { ignored: ['**/src/assets/tiles/**'] } },
   preview: { port: 3240 },
 });
