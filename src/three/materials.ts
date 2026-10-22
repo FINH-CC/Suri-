@@ -26,7 +26,8 @@ export function surfaceColour(hex: string): THREE.Color {
  * - `roughness`: multiplies every plastic's roughness (1 = as authored).
  * - `specular`: specularIntensity of the plastics (dielectric reflectance at normal incidence, 1 = from the ior).
  * - `sheen`: the silicone parts' grazing sheen.
- * - `satin`: the Satin finish (roughness, clear coat, clear coat roughness); silicone parts take `siliconeClearcoat`.
+ * - `satin`: the Satin finish (roughness, clear coat, clear coat roughness); silicone parts take `siliconeClearcoat`;
+ *   `specular` (optional) is the hard plastics' specularIntensity under Satin, for the renders' glossier reflections.
  * - `matteGrain`: amplitude of a faint roughness variation on Matte hard plastics (0 = none). Roughness only, never colour.
  * - `silicone`: roughness added to the silicone parts (cap, grip) and their sheen roughness (null = follows roughness).
  * - `metal`: roughness and environment strength of the metal parts.
@@ -37,7 +38,7 @@ export type MaterialResponse = {
   roughness: number;
   specular: number;
   sheen: number;
-  satin: { roughness: number; clearcoat: number; clearcoatRoughness: number; siliconeClearcoat: number };
+  satin: { roughness: number; clearcoat: number; clearcoatRoughness: number; siliconeClearcoat: number; specular?: number };
   matteGrain: number;
   silicone: { roughnessAdd: number; sheenRoughness: number | null };
   metal: { roughness: number; envMapIntensity: number };
@@ -100,25 +101,64 @@ export const plastic = (hex: string, o: THREE.MeshPhysicalMaterialParameters = {
   return m;
 };
 
+/*
+ * Shader patches compose: each material keeps an ordered list of named patches (string edits of three's physical
+ * shader that keep the include they hook, so several can hook the same line). The program cache key is the list of
+ * names. Finish patches (speckle, grain) are swapped by `clearFinishPatches` when the finish changes; detail patches
+ * (src/three/details.ts: deboss, button rim, dot, seam, filaments) stay.
+ */
+type Patch = { key: string; finish: boolean; fn: (sh: THREE.WebGLProgramParametersWithUniforms) => void };
+const PATCHES = new WeakMap<THREE.Material, Patch[]>();
+
+function installPatches(mat: THREE.Material, list: Patch[]): void {
+  PATCHES.set(mat, list);
+  mat.onBeforeCompile = (sh) => {
+    for (const p of list) p.fn(sh);
+  };
+  const key = list.map((p) => p.key).join('|');
+  mat.customProgramCacheKey = () => key;
+}
+
+/** Add (or replace, by key) a shader patch on a material. */
+export function addPatch<M extends THREE.Material>(
+  mat: M,
+  key: string,
+  fn: Patch['fn'],
+  finish = false,
+): M {
+  const list = (PATCHES.get(mat) ?? []).filter((p) => p.key !== key && !(finish && p.finish));
+  list.push({ key, finish, fn });
+  installPatches(mat, list);
+  return mat;
+}
+
+/** Remove the finish patches (speckle, grain) and keep the detail patches. */
+export function clearFinishPatches(mat: THREE.Material): void {
+  installPatches(mat, (PATCHES.get(mat) ?? []).filter((p) => !p.finish));
+}
+
 /** Plant-based head: fine light/dark flecks, generated from position (CAD has no UVs). */
 export function speckle<M extends THREE.Material>(mat: M): M {
-  mat.onBeforeCompile = (sh) => {
-    sh.vertexShader =
-      'varying vec3 vObjPos;\n' +
-      sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vObjPos=position;');
-    sh.fragmentShader =
-      'varying vec3 vObjPos;\n' +
-      sh.fragmentShader.replace(
-        'vec4 diffuseColor = vec4( diffuse, opacity );',
-        `vec4 diffuseColor = vec4( diffuse, opacity );
+  return addPatch(
+    mat,
+    'speckle',
+    (sh) => {
+      sh.vertexShader =
+        'varying vec3 vObjPos;\n' +
+        sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vObjPos=position;');
+      sh.fragmentShader =
+        'varying vec3 vObjPos;\n' +
+        sh.fragmentShader.replace(
+          'vec4 diffuseColor = vec4( diffuse, opacity );',
+          `vec4 diffuseColor = vec4( diffuse, opacity );
       { vec3 p=vObjPos*30.; vec3 ci=floor(p); float h=fract(sin(dot(ci,vec3(127.1,311.7,74.7)))*43758.5453);
         float d=length(fract(p)-.5); float fl=step(.935,h)*smoothstep(.34,.16,d);
         vec3 fc=fract(h*13.37)>.45?vec3(.42,.41,.40):vec3(1.);
         diffuseColor.rgb=mix(diffuseColor.rgb,fc*mix(vec3(1.),diffuseColor.rgb,.25),fl*.6); }`,
-      );
-  };
-  mat.customProgramCacheKey = () => 'speckle';
-  return mat;
+        );
+    },
+    true,
+  );
 }
 
 /**
@@ -126,38 +166,42 @@ export function speckle<M extends THREE.Material>(mat: M): M {
  * has no UVs), so large flat areas catch the light a little unevenly, like moulded plastic. Colour is untouched.
  */
 export function grain<M extends THREE.Material>(mat: M, amp: number): M {
-  mat.onBeforeCompile = (sh) => {
-    sh.vertexShader =
-      'varying vec3 vGrainPos;\n' +
-      sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vGrainPos=position;');
-    sh.fragmentShader =
-      `varying vec3 vGrainPos;
+  return addPatch(
+    mat,
+    `grain${amp}`,
+    (sh) => {
+      sh.vertexShader =
+        'varying vec3 vGrainPos;\n' +
+        sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vGrainPos=position;');
+      sh.fragmentShader =
+        `varying vec3 vGrainPos;
       float gH(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
       float gN(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
         return mix(mix(mix(gH(i),gH(i+vec3(1,0,0)),f.x),mix(gH(i+vec3(0,1,0)),gH(i+vec3(1,1,0)),f.x),f.y),
                    mix(mix(gH(i+vec3(0,0,1)),gH(i+vec3(1,0,1)),f.x),mix(gH(i+vec3(0,1,1)),gH(i+vec3(1,1,1)),f.x),f.y),f.z);}
       ` +
-      sh.fragmentShader.replace(
-        '#include <roughnessmap_fragment>',
-        `#include <roughnessmap_fragment>
+        sh.fragmentShader.replace(
+          '#include <roughnessmap_fragment>',
+          `#include <roughnessmap_fragment>
       roughnessFactor=clamp(roughnessFactor+${amp.toFixed(4)}*((gN(vGrainPos*2.)-.5)+.5*(gN(vGrainPos*9.)-.5)),.04,1.);`,
-      );
-  };
-  mat.customProgramCacheKey = () => `grain${amp}`;
-  return mat;
+        );
+    },
+    true,
+  );
 }
 
 /** The chosen finish, applied to the main plastic of handle, cap, grip and mount. */
 export function applyFinish(m: THREE.MeshPhysicalMaterial, finish: FinishId): THREE.MeshPhysicalMaterial {
   // pre-finish values, kept so a finish-only change can re-finish the material without rebuilding (scene.refinish)
   m.userData.finishable = true;
-  m.userData.base ??= { roughness: m.roughness, clearcoat: m.clearcoat, clearcoatRoughness: m.clearcoatRoughness, sheenRoughness: m.sheenRoughness };
+  m.userData.base ??= { roughness: m.roughness, clearcoat: m.clearcoat, clearcoatRoughness: m.clearcoatRoughness, sheenRoughness: m.sheenRoughness, specularIntensity: m.specularIntensity };
   const silicone = m.sheen > 0;
   if (finish === 'satin') {
     const s = response.satin;
     m.roughness = silicone ? Math.min(1, s.roughness + response.silicone.roughnessAdd) : s.roughness;
     m.clearcoat = silicone ? s.siliconeClearcoat : s.clearcoat;
     m.clearcoatRoughness = s.clearcoatRoughness;
+    if (!silicone && s.specular !== undefined) m.specularIntensity = s.specular;
     if (silicone) m.sheenRoughness = response.silicone.sheenRoughness ?? m.roughness; // sheen follows the live roughness, as in r128
   } else if (finish === 'speckle') speckle(m);
   else if (finish === 'matte' && !silicone && response.matteGrain > 0) grain(m, response.matteGrain);

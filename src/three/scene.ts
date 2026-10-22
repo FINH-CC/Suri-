@@ -4,7 +4,7 @@ import { dimFor, PARTS } from '../data/parts';
 import type { FinishId, PartId } from '../data/parts';
 import type { Design } from '../state/design';
 import type { CapCore } from './capfit';
-import { applyFinish, setMaterialResponse, setStudioEnv } from './materials';
+import { applyFinish, clearFinishPatches, setMaterialResponse, setStudioEnv } from './materials';
 import type { BrushMeta, CadGeo } from './model';
 import { buildPart, dispose } from './parts/index';
 import type { BuildCtx } from './parts/index';
@@ -37,22 +37,20 @@ export function finishOnly(prev: Design | null, next: Design): boolean {
   return !!prev && prev.finish !== next.finish && partsToRebuild(prev, next).length === 0;
 }
 
-const noop = () => {};
-
 /** Re-finish a material built through `applyFinish`: back to its pre-finish values, then the new finish. */
 export function refinish(m: THREE.MeshPhysicalMaterial, finish: FinishId): void {
   const b = m.userData.base as
-    | { roughness: number; clearcoat: number; clearcoatRoughness: number; sheenRoughness?: number }
+    | { roughness: number; clearcoat: number; clearcoatRoughness: number; sheenRoughness?: number; specularIntensity?: number }
     | undefined;
   if (b) {
     m.roughness = b.roughness;
     m.clearcoat = b.clearcoat;
     m.clearcoatRoughness = b.clearcoatRoughness;
     if (b.sheenRoughness !== undefined) m.sheenRoughness = b.sheenRoughness;
+    if (b.specularIntensity !== undefined) m.specularIntensity = b.specularIntensity;
   }
-  // speckle() installs a shader patch; leaving speckle must remove it
-  m.onBeforeCompile = noop;
-  m.customProgramCacheKey = () => '';
+  // speckle() and grain() install shader patches; a new finish removes them (detail patches such as the deboss stay)
+  clearFinishPatches(m);
   applyFinish(m, finish);
   m.needsUpdate = true;
 }
