@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT } from '../../src/data/characters';
 import { PARTS } from '../../src/data/parts';
-import { applyFinish, plastic, siliconeSheen } from '../../src/three/materials';
+import { applyFinish, PARITY_RESPONSE, patchKeys, plastic, setMaterialResponse, siliconeSheen } from '../../src/three/materials';
 import { finishOnly, partsToRebuild, refinish } from '../../src/three/scene';
+import { handleDetails } from '../../src/three/details';
 import type { Design } from '../../src/state/design';
 
 const clone = (d: Design): Design => JSON.parse(JSON.stringify(d));
@@ -51,5 +52,31 @@ describe('scene diff', () => {
     refinish(m, 'matte');
     expect(m.customProgramCacheKey()).toBe('');
     expect(m.roughness).toBe(0.55);
+  });
+  it('refinish gives the same patch order and program key as a fresh build (detail patches included)', () => {
+    const hex = '#fbbe6e';
+    for (const finish of ['speckle', 'matte', 'satin'] as const) {
+      const fresh = handleDetails(applyFinish(plastic(hex, { roughness: 0.6, clearcoat: 0 }), finish));
+      const m = handleDetails(applyFinish(plastic(hex, { roughness: 0.6, clearcoat: 0 }), 'satin'));
+      refinish(m, 'speckle');
+      refinish(m, finish);
+      expect(patchKeys(m)).toEqual(patchKeys(fresh));
+      expect(m.customProgramCacheKey()).toBe(fresh.customProgramCacheKey());
+    }
+    const s = handleDetails(applyFinish(plastic(hex), 'speckle'));
+    expect(patchKeys(s)).toEqual(['speckle', 'handle-details']);
+  });
+  it('refinish restores specularIntensity after Satin', () => {
+    setMaterialResponse({ ...PARITY_RESPONSE, satin: { ...PARITY_RESPONSE.satin, specular: 2 } });
+    try {
+      const m = applyFinish(plastic('#fbbe6e'), 'satin');
+      expect(m.specularIntensity).toBe(2);
+      refinish(m, 'matte');
+      expect(m.specularIntensity).toBe(1);
+      refinish(m, 'satin');
+      expect(m.specularIntensity).toBe(2);
+    } finally {
+      setMaterialResponse(PARITY_RESPONSE);
+    }
   });
 });

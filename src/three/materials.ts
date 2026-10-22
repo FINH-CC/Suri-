@@ -105,12 +105,21 @@ export const plastic = (hex: string, o: THREE.MeshPhysicalMaterialParameters = {
  * Shader patches compose: each material keeps an ordered list of named patches (string edits of three's physical
  * shader that keep the include they hook, so several can hook the same line). The program cache key is the list of
  * names. Finish patches (speckle, grain) are swapped by `clearFinishPatches` when the finish changes; detail patches
- * (src/three/details.ts: deboss, button rim, dot, seam, filaments) stay.
+ * (src/three/details.ts: deboss, dot, seam, filaments) stay. Order is canonical (installPatches).
  */
 type Patch = { key: string; finish: boolean; fn: (sh: THREE.WebGLProgramParametersWithUniforms) => void };
 const PATCHES = new WeakMap<THREE.Material, Patch[]>();
 
-function installPatches(mat: THREE.Material, list: Patch[]): void {
+/** Detail patches run in this order; any other key runs after them, in the order it was added. */
+const DETAIL_ORDER = ['deboss', 'handle-details', 'head-seam', 'filaments'];
+const rank = (p: Patch) => (p.finish ? -1 : DETAIL_ORDER.includes(p.key) ? DETAIL_ORDER.indexOf(p.key) : DETAIL_ORDER.length);
+
+/**
+ * Canonical order (finish patches first, then details in DETAIL_ORDER), whatever order they were added in: a fresh
+ * build and a refinished material compile the same program and draw the same thing.
+ */
+function installPatches(mat: THREE.Material, patches: Patch[]): void {
+  const list = patches.map((p, i) => ({ p, i })).sort((a, b) => rank(a.p) - rank(b.p) || a.i - b.i).map(({ p }) => p);
   PATCHES.set(mat, list);
   mat.onBeforeCompile = (sh) => {
     for (const p of list) p.fn(sh);
@@ -131,6 +140,9 @@ export function addPatch<M extends THREE.Material>(
   installPatches(mat, list);
   return mat;
 }
+
+/** The names of a material's patches, in the order they run. */
+export const patchKeys = (mat: THREE.Material): string[] => (PATCHES.get(mat) ?? []).map((p) => p.key);
 
 /** Remove the finish patches (speckle, grain) and keep the detail patches. */
 export function clearFinishPatches(mat: THREE.Material): void {
