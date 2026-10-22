@@ -104,19 +104,21 @@ const HERO: Look = {
   exposure: 1.02,
   env: {
     room: 0.3,
-    tint: [1, 0.98, 0.96],
+    tint: [1, 1, 1], // neutral studio (Task 22): a warm room pushed the pale tones' hue 10-13 degrees
     sigma: 0.022,
     panels: [
-      { w: 22, h: 44, pos: [-22, 16, 16], i: 3.0, tint: [1, 0.99, 0.97] }, // key softbox
-      { w: 26, h: 32, pos: [6, 0, 28], i: 0.42 }, // front fill, dimmer: more form
+      { w: 22, h: 44, pos: [-22, 16, 16], i: 3.0 }, // key softbox
+      { w: 26, h: 32, pos: [6, 0, 28], i: 0.3 }, // front fill, dim: a darker core between the edge streaks
       { w: 14, h: 34, pos: [24, 0, 10], i: 0.22 }, // right fill, dimmer
       { w: 36, h: 32, pos: [-4, 28, 6], i: 1.4 }, // top
-      { w: 5, h: 48, pos: [-20, 4, -16], i: 3.2 }, // rim left-back, brighter and wider: edge highlights
-      { w: 5, h: 48, pos: [22, 4, -14], i: 3.4 }, // rim right-back
-      { w: 50, h: 50, pos: [0, -27, 4], i: 0.38, tint: [1, 0.95, 0.93] }, // floor bounce
+      { w: 5, h: 48, pos: [-20, 4, -16], i: 3.2, tint: [0.95, 0.98, 1.03] }, // rim left-back: cool fresnel edge
+      { w: 5, h: 48, pos: [22, 4, -14], i: 3.4, tint: [0.95, 0.98, 1.03] }, // rim right-back
+      { w: 5, h: 54, pos: [-26, 8, 0], i: 12 }, // strip softbox left: the long vertical streak down the left edge
+      { w: 5, h: 54, pos: [26, 8, -1], i: 12 }, // strip softbox right
+      { w: 50, h: 50, pos: [0, -27, 4], i: 0.38 }, // floor bounce
     ],
   },
-  key: { colour: PARITY_KEY.colour, intensity: 0.6 * Math.PI, pos: [-14, 38, 14] }, // higher: a short floor shadow
+  key: { colour: [1, 1, 1], intensity: 0.6 * Math.PI, pos: [-14, 38, 14] }, // higher: a short floor shadow
   rims: [
     { colour: [1, 1, 1], intensity: 1.1, pos: [-18, 14, -26] },
     { colour: [0.96, 0.98, 1], intensity: 1.3, pos: [22, 10, -22] },
@@ -139,11 +141,11 @@ const HERO: Look = {
     roughness: 0.92,
     specular: 1.15,
     sheen: 0.45, // velvety silicone edges
-    satin: { roughness: 0.3, clearcoat: 0.45, clearcoatRoughness: 0.08, siliconeClearcoat: 0 }, // clear coat on hard plastics only
+    satin: { roughness: 0.3, clearcoat: 0.7, clearcoatRoughness: 0.2, siliconeClearcoat: 0, specular: 2 }, // clear coat on hard plastics only
     matteGrain: 0.07,
     silicone: { roughnessAdd: 0.08, sheenRoughness: 0.5 },
     metal: { roughness: 0.16, envMapIntensity: 1.5 },
-    bristle: { roughness: 0.68, sheen: 0.5, clearcoat: 0, lift: 0.06 },
+    bristle: { roughness: 0.5, sheen: 0.2, clearcoat: 0.35, lift: 0.03 }, // solid white bundles, glossy domed tips
   },
 };
 
