@@ -6,6 +6,8 @@ import type { BrushScene } from '../three/scene';
 import { placeSticker, stickerUrl } from '../three/stickers';
 import { keepFocus } from './focus';
 
+/** A touch phone or tablet: no hover, coarse pointer (no Esc key to mention). */
+const touch = () => typeof matchMedia === 'function' && matchMedia('(hover: none) and (pointer: coarse)').matches;
 const esc = (t: string) => t.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
 /** Stickers card (legacy 1352-1385): arm a sticker, tap the brush to place it, list, resize, rotate, remove. Returns an unmount. */
@@ -39,7 +41,8 @@ export function mountStickersCard(store: Store, scene: BrushScene): () => void {
       stTiles.appendChild(b);
     }
     stage.classList.toggle('placing', !!armed);
-    hint.textContent = armed ? `Click the brush to place a ${STICKERS[armed].toLowerCase()}. Esc to stop.` : '';
+    const what = armed ? STICKERS[armed].toLowerCase() : '';
+    hint.textContent = !armed ? '' : touch() ? `Tap the brush to place a ${what}.` : `Click the brush to place a ${what}. Esc to stop.`;
   }
   function renderStickerList(d: Design) {
     stList.innerHTML = '';

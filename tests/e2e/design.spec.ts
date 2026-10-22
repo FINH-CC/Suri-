@@ -35,6 +35,7 @@ test.describe('design screen', () => {
     await star().click();
     await expect(star()).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('#stage')).toHaveClass(/placing/);
+    await expect(page.locator('#placing-hint')).toHaveText('Click the brush to place a star. Esc to stop.');
     const canvas = page.locator('#stage canvas');
     const box = (await canvas.boundingBox())!;
     const cx = box.x + box.width / 2, cy = box.y + box.height / 2;

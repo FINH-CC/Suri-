@@ -125,4 +125,13 @@ test.describe('phone layout', () => {
       expect(bar.height, `toolbar on one line at ${width}`).toBeLessThan(45);
     }
   });
+
+  test('the sticker hint says tap, with no Esc key to mention', async ({ page }) => {
+    await boot(page);
+    await page.locator('#step-next').click();
+    const star = page.locator('#sticker-tiles .tile', { hasText: 'Star' });
+    await star.scrollIntoViewIfNeeded();
+    await star.click();
+    await expect(page.locator('#placing-hint')).toHaveText('Tap the brush to place a star.');
+  });
 });
