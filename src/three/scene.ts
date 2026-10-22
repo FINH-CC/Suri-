@@ -3,7 +3,6 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { dimFor, PARTS } from '../data/parts';
 import type { FinishId, PartId } from '../data/parts';
 import type { Design } from '../state/design';
-import { capCore, capEnvelope } from './capfit';
 import type { CapCore } from './capfit';
 import { applyFinish, setMaterialResponse, setStudioEnv } from './materials';
 import type { BrushMeta, CadGeo } from './model';
@@ -130,7 +129,6 @@ export class BrushScene {
   /** The key light's shadow map is redrawn only on frames where what casts or receives it changed (or moved). */
   private shadowsDirty = true;
   private lastPose = '';
-  private uploadCap: { geo: THREE.BufferGeometry; core: CapCore } | null = null;
   private readonly _cb = new THREE.Box3();
 
   constructor(
@@ -272,20 +270,13 @@ export class BrushScene {
   /** Build context (finish, uploads, cap cavity fitted to `d.parts.head`) for building any design's parts, e.g. snapshots. */
   buildCtxFor(d: Design): BuildCtx {
     const ctx = this.ctxFor(d);
-    ctx.capCore = this.capCoreFor(d, ctx);
+    ctx.capCore = this.capCoreFor();
     return ctx;
   }
 
-  private capCoreFor(d: Design, ctx: BuildCtx): CapCore {
-    if (d.parts.head !== 'upload') return this.capFit[d.parts.head] ?? this.capFit.plain; // only plain is built in
-    const geo = this.uploads.head;
-    if (!geo) return this.capFit.plain;
-    if (this.uploadCap?.geo !== geo) {
-      const head = buildPart('head', 'upload', '#ffffff', ctx);
-      this.uploadCap = { geo, core: capCore(capEnvelope(head)) };
-      dispose(head);
-    }
-    return this.uploadCap.core;
+  /** The head has no shapes and no upload (Task 21): the cap always fits the plain head. */
+  private capCoreFor(): CapCore {
+    return this.capFit.plain;
   }
 
   private rebuild(id: PartId, d: Design): void {

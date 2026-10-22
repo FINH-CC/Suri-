@@ -50,7 +50,6 @@ export function mountDesign(store: Store, scene: BrushScene): () => void {
   const unsubs: (() => void)[] = [];
 
   /* ---------- tiles: static renders (npm run tiles), uploads are live ---------- */
-  let headUploadRev = 0; // bumps when the head upload changes, so cap cards re-render
   function tileSrc(part: PartId, style: string): string {
     if (style === 'upload') return snapshot(scene, store.get(), 'tile', 192, 192, { part, style }); // live, in the current colour
     if (!(style in PART[part].options)) { console.error(`No tile for ${part}-${style}`); return ''; }
@@ -99,7 +98,7 @@ export function mountDesign(store: Store, scene: BrushScene): () => void {
   const cards = {} as Record<PartId, HTMLElement>;
   const cardKey = {} as Record<PartId, string>;
   const keyFor = (id: PartId, d: Design) =>
-    [d.parts[id], d.colours[id], !!scene.uploads[id], id === 'cap' ? `${d.parts.head}:${headUploadRev}` : ''].join('|');
+    [d.parts[id], d.colours[id], !!scene.uploads[id], id === 'cap' ? d.parts.head : ''].join('|');
 
   for (const p of PARTS) {
     const sec = document.createElement('section');
@@ -201,13 +200,11 @@ export function mountDesign(store: Store, scene: BrushScene): () => void {
     }
     scene.uploads[id]?.dispose();
     scene.uploads[id] = geo;
-    if (id === 'head') headUploadRev++;
     const d = store.get();
     if (d.parts[id] === 'upload') {
       // same design, new geometry: the store sees no change, so rebuild and redraw here
       scene.applyDesign(d, null);
       renderCard(id, d);
-      if (id === 'head') renderCard('cap', d);
     } else {
       store.update({ parts: { ...d.parts, [id]: 'upload' } });
     }
