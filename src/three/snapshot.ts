@@ -260,45 +260,8 @@ export function snapshot(
   w = Math.max(1, Math.round(w));
   h = Math.max(1, Math.round(h));
   const s = stateFor(bs);
-  const ctx = bs.buildCtxFor(design);
   const g = new THREE.Group();
-  let cam: THREE.Camera;
-  let clip = false;
-
-  if (pose === 'tile') {
-    const id = opts.part;
-    if (!id) throw new Error("snapshot(tile): opts.part is required");
-    const style = opts.style ?? design.parts[id];
-    g.add(buildPart(id, style, design.colours[id], ctx));
-    const view = THUMB_VIEW[id];
-    const minY = style !== 'upload' ? view.minY : undefined;
-    if (minY !== undefined) {
-      clip = true;
-      const planes = [new THREE.Plane(new THREE.Vector3(0, 1, 0), -minY)];
-      g.traverse((o) => {
-        const mesh = o as THREE.Mesh;
-        if (mesh.material) (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).forEach((m) => (m.clippingPlanes = planes));
-      });
-    }
-    frameOrtho(s.ortho, worldPoints(g, minY), view.dir, view.tilt, 1.2, w / h);
-    cam = s.ortho;
-  } else {
-    for (const p of PARTS) if (p.id !== 'mount') g.add(buildPart(p.id, design.parts[p.id], design.colours[p.id], ctx));
-    if (pose === 'hero') {
-      g.rotation.set(0.08, 0.5, -0.5); // leaning hero pose
-      frameHero(s.persp, g, w / h);
-      cam = s.persp;
-    } else {
-      frameOrtho(s.ortho, worldPoints(g), THUMB_BRUSH.dir, THUMB_BRUSH.tilt, 1.06, w / h);
-      cam = s.ortho;
-    }
-  }
-
-  syncLook(s, bs);
-  s.scene.environment = bs.scene.environment; // reuse the stage's PMREM studio
-  s.scene.environmentIntensity = bs.scene.environmentIntensity;
-  s.scene.add(g);
-  const r = bs.renderer, t = targetsFor(s, w, h);
+  const r = bs.renderer;
 
   // save renderer state
   const prevTarget = r.getRenderTarget();
@@ -309,8 +272,48 @@ export function snapshot(
   const prevAlpha = r.getClearAlpha();
   const prevClip = r.localClippingEnabled;
   const prevAutoClear = r.autoClear;
+  let t: ReturnType<typeof targetsFor>;
 
+  // building and framing sit inside the try too: a throw there still disposes whatever was built
   try {
+    const ctx = bs.buildCtxFor(design);
+    let cam: THREE.Camera;
+    let clip = false;
+    if (pose === 'tile') {
+      const id = opts.part;
+      if (!id) throw new Error("snapshot(tile): opts.part is required");
+      const style = opts.style ?? design.parts[id];
+      g.add(buildPart(id, style, design.colours[id], ctx));
+      const view = THUMB_VIEW[id];
+      const minY = style !== 'upload' ? view.minY : undefined;
+      if (minY !== undefined) {
+        clip = true;
+        const planes = [new THREE.Plane(new THREE.Vector3(0, 1, 0), -minY)];
+        g.traverse((o) => {
+          const mesh = o as THREE.Mesh;
+          if (mesh.material) (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).forEach((m) => (m.clippingPlanes = planes));
+        });
+      }
+      frameOrtho(s.ortho, worldPoints(g, minY), view.dir, view.tilt, 1.2, w / h);
+      cam = s.ortho;
+    } else {
+      for (const p of PARTS) if (p.id !== 'mount') g.add(buildPart(p.id, design.parts[p.id], design.colours[p.id], ctx));
+      if (pose === 'hero') {
+        g.rotation.set(0.08, 0.5, -0.5); // leaning hero pose
+        frameHero(s.persp, g, w / h);
+        cam = s.persp;
+      } else {
+        frameOrtho(s.ortho, worldPoints(g), THUMB_BRUSH.dir, THUMB_BRUSH.tilt, 1.06, w / h);
+        cam = s.ortho;
+      }
+    }
+
+    syncLook(s, bs);
+    s.scene.environment = bs.scene.environment; // reuse the stage's PMREM studio
+    s.scene.environmentIntensity = bs.scene.environmentIntensity;
+    s.scene.add(g);
+    t = targetsFor(s, w, h);
+
     r.localClippingEnabled = clip;
     r.autoClear = true;
     r.setClearColor(0, 0);

@@ -25,6 +25,8 @@
   .seg button{height:26px;padding:0 10px}
   .undo{width:32px;height:32px}
   .undo.redo{left:56px}
+  /* the sticker hint sits just above the stage's bottom row (undo/redo at bottom:22px, 32px tall), off the brush's middle */
+  .placing-hint{top:auto;bottom:64px;width:max-content;max-width:calc(100% - 32px);white-space:normal;text-align:center}
 
   .info{padding-top:8px}
   .steps{position:static}

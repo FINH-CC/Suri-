@@ -15,6 +15,7 @@ import type { Look } from './looks';
 import { makeEnv, makeKeyLight, makeRenderer, setKeyLight } from './renderer';
 import { disposeSnapshots } from './snapshot';
 import { SSAO } from './ssao';
+import { disposeWarmSticker } from './stickers';
 
 /* ---------- pure helpers (no DOM) ---------- */
 
@@ -638,6 +639,9 @@ export class BrushScene {
     this.contact.material.dispose();
     this.scene.environment?.dispose();
     this.key.shadow.dispose();
+    this.ssao.dispose();
+    disposeWarmSticker();
     this.renderer.dispose();
+    this.renderer.forceContextLoss(); // hand the GL context back now (browsers cap live contexts), not at GC
   }
 }

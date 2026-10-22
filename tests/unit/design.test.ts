@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT } from '../../src/data/characters';
-import { decode, encode, validate } from '../../src/state/design';
+import { cleanName, decode, encode, validate } from '../../src/state/design';
 
 describe('validate', () => {
   it('empty input gives defaults with no character', () => {
@@ -17,6 +17,15 @@ describe('validate', () => {
   });
   it('sanitises name', () => {
     expect(validate({ name: 'a<b>cdefghijklmnopq' }).name).toBe('abcdefghijklmn');
+  });
+  it('truncates names by code point, never splitting an emoji', () => {
+    expect(validate({ name: '😀'.repeat(20) }).name).toBe('😀'.repeat(14));
+    expect(cleanName('abcdefghijklm😀x')).toBe('abcdefghijklm😀');
+  });
+  it('clamps sticker size and rotation, drops stickers with non-finite positions', () => {
+    const at = { t: 'star', p: 'cap', x: 1, y: 2, z: 3, nx: 0, ny: 1, nz: 0 };
+    const v = validate({ stickers: [{ ...at, s: 9, r: 400 }, { ...at, s: 0.1, r: -999 }, { ...at, x: 'nope' }, { ...at, nz: Infinity }, { ...at, y: undefined }] });
+    expect(v.stickers.map((st) => [st.s, st.r])).toEqual([[2, 180], [0.4, -180]]);
   });
   it('upload only kept when flagged', () => {
     expect(validate({ parts: { cap: 'upload' } }).parts.cap).toBe(DEFAULT.parts.cap);

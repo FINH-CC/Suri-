@@ -8,6 +8,9 @@ export type Design = DesignData;
 export type { Sticker };
 
 const has = (o: object, k: unknown): k is string => typeof k === 'string' && Object.hasOwn(o, k);
+/** Names: at most 14 characters (code points, so an emoji is never split in half), no angle brackets. */
+export const cleanName = (v: unknown): string => Array.from(String(v || '').replace(/[<>]/g, '')).slice(0, 14).join('');
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const rec = (v: unknown): Record<string, unknown> =>
   v && typeof v === 'object' ? (v as Record<string, unknown>) : {};
 
@@ -28,19 +31,19 @@ export function validate(input: unknown, opts: { uploads?: Partial<Record<PartId
   if (Array.isArray(s.stickers)) {
     for (const raw of s.stickers.slice(0, 40)) {
       const t = rec(raw);
-      if (has(STICKERS, t.t) && has(PART, t.p)) {
-        stickers.push({
-          t: t.t as Sticker['t'], p: t.p as PartId,
-          x: +(t.x as number), y: +(t.y as number), z: +(t.z as number),
-          nx: +(t.nx as number), ny: +(t.ny as number), nz: +(t.nz as number),
-          s: +(t.s as number) || 0.9, r: +(t.r as number) || 0,
-        });
-      }
+      if (!has(STICKERS, t.t) || !has(PART, t.p)) continue;
+      const pos = [t.x, t.y, t.z, t.nx, t.ny, t.nz].map((v) => +(v as number));
+      if (!pos.every(Number.isFinite)) continue; // a sticker with no place on the brush is dropped
+      const [x, y, z, nx, ny, nz] = pos;
+      stickers.push({
+        t: t.t as Sticker['t'], p: t.p as PartId, x, y, z, nx, ny, nz,
+        s: clamp(+(t.s as number) || 0.9, 0.4, 2), r: clamp(+(t.r as number) || 0, -180, 180),
+      });
     }
   }
   return {
     parts, colours, stickers,
-    name: String(s.name || '').replace(/[<>]/g, '').slice(0, 14),
+    name: cleanName(s.name),
     finish: has(FINISHES, s.finish) ? (s.finish as Design['finish']) : 'matte',
     character: has(CHARACTERS, s.character) ? (s.character as CharacterId) : '',
   };

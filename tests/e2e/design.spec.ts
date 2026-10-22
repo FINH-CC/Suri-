@@ -49,7 +49,7 @@ test.describe('design screen', () => {
     await page.waitForTimeout(500);
     await expect(rows).toHaveCount(1);
 
-    await rows.first().getByRole('button', { name: /Remove/ }).click();
+    await page.locator('#sticker-list .list-item').first().getByRole('button', { name: /Remove/ }).click();
     await expect(rows).toHaveCount(0);
 
     // a file that is not an STL: toast, and the design is unchanged
@@ -58,5 +58,19 @@ test.describe('design screen', () => {
     await page.locator('#file').setInputFiles({ name: 'note.txt', mimeType: 'text/plain', buffer: Buffer.from('hello') });
     await expect(page.locator('#toast')).toHaveText('That file could not be read as an STL');
     expect(await saved(page)).toBe(before);
+  });
+
+  test('keyboard focus stays on the picked tile, preset, finish and sticker after a re-render', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('#intro')).toHaveCount(0, { timeout: BOOT });
+    await page.locator('#step-next').click();
+    const focused = () => page.evaluate(() => { const a = document.activeElement as HTMLElement; return a === document.body ? 'body' : `${a.className}|${a.getAttribute('aria-pressed')}|${a.textContent?.trim()}`; });
+    for (const [sel, text] of [['#card-cap .tile', 'Bear'], ['#presets .preset', ''], ['#finishes button', 'Satin'], ['#sticker-tiles .tile', 'Star']] as const) {
+      const b = text ? page.locator(sel, { hasText: text }) : page.locator(sel).nth(1);
+      await b.focus();
+      await page.keyboard.press('Enter');
+      await expect.poll(focused, { message: sel }).toMatch(/\|true\|/);
+    }
+    await page.keyboard.press('Escape');
   });
 });

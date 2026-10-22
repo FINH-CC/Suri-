@@ -10,6 +10,7 @@ import { buildPart, dispose } from '../three/parts/index';
 import type { BrushScene } from '../three/scene';
 import { snapshot } from '../three/snapshot';
 import { tileUrl } from '../assets/tiles';
+import { keepFocus } from './focus';
 import { mountStickersCard } from './stickers-card';
 import { toast } from './toast';
 import { UPLOAD_COPY, parseStl } from './upload';
@@ -60,7 +61,7 @@ export function mountDesign(store: Store, scene: BrushScene): () => void {
       b.className = 'preset';
       b.setAttribute('aria-pressed', String(PARTS.every((p) => d.colours[p.id] === pr.c[p.id])));
       b.innerHTML = `<i style="background:conic-gradient(${pr.c.cap} 0 50%,${pr.c.mount} 0)"></i>${esc(pr.name)}`;
-      b.addEventListener('click', () => store.update({ colours: { ...pr.c } }));
+      b.addEventListener('click', () => keepFocus(presetsEl, b, '.preset', () => store.update({ colours: { ...pr.c } })));
       presetsEl.appendChild(b);
     }
   }
@@ -72,7 +73,7 @@ export function mountDesign(store: Store, scene: BrushScene): () => void {
       b.setAttribute('aria-pressed', String(d.finish === k));
       b.textContent = f.name;
       b.title = f.sub;
-      b.addEventListener('click', () => store.update({ finish: k }));
+      b.addEventListener('click', () => keepFocus(finishesEl, b, 'button', () => store.update({ finish: k })));
       finishesEl.appendChild(b);
     }
   }
@@ -141,7 +142,7 @@ export function mountDesign(store: Store, scene: BrushScene): () => void {
       b.innerHTML = `${o.badge ? '<span class="badge">STL</span>' : ''}<img alt="" width="192" height="192" loading="lazy">${esc(o.name)}`;
       const img = b.querySelector('img')!;
       try { const src = tileSrc(id, o.k); if (src) img.src = src; } catch (e) { console.error(e); }
-      b.addEventListener('click', () => store.update({ parts: { ...store.get().parts, [id]: o.k } }));
+      b.addEventListener('click', () => keepFocus(sec, b, '.tile', () => store.update({ parts: { ...store.get().parts, [id]: o.k } })));
       tiles.appendChild(b);
     }
     const up = document.createElement('button');
@@ -168,7 +169,9 @@ export function mountDesign(store: Store, scene: BrushScene): () => void {
       if (f.size > 20 * 1024 * 1024) throw new Error('too-big');
       geo = parseStl(await f.arrayBuffer(), id, referenceBox(id));
     } catch (err) {
-      toast((err as Error).message === 'too-big' ? UPLOAD_COPY.tooBig : UPLOAD_COPY.notStl);
+      const msg = (err as Error)?.message;
+      if (msg !== 'too-big' && msg !== 'not-stl') console.error(err); // a bug, not a bad file: keep the details
+      toast(msg === 'too-big' ? UPLOAD_COPY.tooBig : UPLOAD_COPY.notStl);
       return;
     }
     scene.uploads[id]?.dispose();

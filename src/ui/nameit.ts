@@ -2,6 +2,7 @@ import { CHARACTERS } from '../data/characters';
 import { mixHex } from '../data/palette';
 import { PART } from '../data/parts';
 import type { PartId } from '../data/parts';
+import { cleanName } from '../state/design';
 import type { Design } from '../state/design';
 import type { Store } from '../state/store';
 import type { BrushScene } from '../three/scene';
@@ -113,7 +114,14 @@ export function mountNameIt(store: Store, scene: BrushScene): () => void {
     render(d);
   }
 
-  input.addEventListener('input', () => store.update({ name: input.value.replace(/[<>]/g, '').slice(0, 14) }), { signal: ac.signal });
+  input.addEventListener('input', () => {
+    const name = cleanName(input.value);
+    if (input.value !== name) {
+      input.value = name; // show what is kept, caret at the end
+      input.setSelectionRange(name.length, name.length);
+    }
+    store.update({ name });
+  }, { signal: ac.signal });
 
   const unsub = store.subscribe((d) => {
     if (!visible()) return;

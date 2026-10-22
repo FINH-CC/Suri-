@@ -4,6 +4,7 @@ import type { Design } from '../state/design';
 import type { Store } from '../state/store';
 import type { BrushScene } from '../three/scene';
 import { placeSticker, stickerUrl } from '../three/stickers';
+import { keepFocus } from './focus';
 
 const esc = (t: string) => t.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
@@ -34,7 +35,7 @@ export function mountStickersCard(store: Store, scene: BrushScene): () => void {
       b.className = 'tile';
       b.setAttribute('aria-pressed', String(armed === k));
       b.innerHTML = `<img src="${stickerUrl(k)}" alt="">${esc(name)}`;
-      b.addEventListener('click', () => setArmed(armed === k ? null : k));
+      b.addEventListener('click', () => keepFocus(stTiles, b, '.tile', () => setArmed(armed === k ? null : k)));
       stTiles.appendChild(b);
     }
     stage.classList.toggle('placing', !!armed);
@@ -49,31 +50,37 @@ export function mountStickersCard(store: Store, scene: BrushScene): () => void {
     }
     d.stickers.forEach((st, i) => {
       const li = document.createElement('li');
+      li.className = 'list-item';
       const name = STICKERS[st.t];
-      li.innerHTML = `<div class="list-row" role="button" tabindex="0" aria-pressed="${i === selected}"><img src="${stickerUrl(st.t)}" alt=""><span>${esc(name)} on ${esc(PART[st.p].name.toLowerCase())}</span><button class="rm" type="button" aria-label="Remove ${esc(name.toLowerCase())}">Remove</button></div>`;
-      const row = li.firstElementChild as HTMLElement;
-      const pick = () => {
+      // the row and Remove are sibling buttons (no interactive content nested in a button)
+      li.innerHTML = `<button class="list-row" type="button" aria-pressed="${i === selected}"><img src="${stickerUrl(st.t)}" alt=""><span>${esc(name)} on ${esc(PART[st.p].name.toLowerCase())}</span></button><button class="rm" type="button" aria-label="Remove ${esc(name.toLowerCase())}">Remove</button>`;
+      const row = li.querySelector<HTMLButtonElement>('.list-row')!;
+      row.addEventListener('click', () => keepFocus(stList, row, '.list-row', () => {
         selected = i;
         sizeIn.value = String(st.s);
         rotIn.value = String(st.r);
         syncSliders();
         renderStickerList(store.get());
-      };
-      row.addEventListener('click', (e) => { if (!(e.target as HTMLElement).classList.contains('rm')) pick(); });
-      row.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
-      row.querySelector('.rm')!.addEventListener('click', () => {
+      }));
+      li.querySelector('.rm')!.addEventListener('click', () => {
         selected = -1;
         store.update({ stickers: store.get().stickers.filter((_, j) => j !== i) });
       });
       stList.appendChild(li);
     });
   }
+  // a slider drag fires many inputs per frame: apply (and re-project the stickers) at most once per animation frame
+  let sliderRaf = 0;
+  const applySliders = () => {
+    sliderRaf = 0;
+    const list = store.get().stickers;
+    if (!list[selected]) return;
+    store.update({ stickers: list.map((st, j) => (j === selected ? { ...st, s: +sizeIn.value, r: +rotIn.value } : st)) });
+  };
   for (const inp of [sizeIn, rotIn]) {
     inp.addEventListener('input', () => {
       syncSliders();
-      const list = store.get().stickers;
-      if (!list[selected]) return;
-      store.update({ stickers: list.map((st, j) => (j === selected ? { ...st, s: +sizeIn.value, r: +rotIn.value } : st)) });
+      sliderRaf ||= requestAnimationFrame(applySliders);
     }, on);
   }
   $('clear-stickers').addEventListener('click', () => { selected = -1; store.update({ stickers: [] }); }, on);
@@ -115,6 +122,7 @@ export function mountStickersCard(store: Store, scene: BrushScene): () => void {
     ac.abort();
     unsub();
     mo.disconnect();
+    cancelAnimationFrame(sliderRaf);
     if (armed) { armed = null; stage.classList.remove('placing'); hint.textContent = ''; }
   };
 }

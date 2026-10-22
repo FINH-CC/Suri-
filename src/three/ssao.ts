@@ -92,6 +92,19 @@ export class SSAO {
     this.aoBlurScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.aoBlurMat));
   }
 
+  /** Free the render targets, materials and quad geometry. */
+  dispose(): void {
+    this.rtN?.depthTexture?.dispose();
+    this.rtN?.dispose();
+    this.rtAO?.dispose();
+    this.rtN = this.rtAO = null;
+    Object.values(this.normalMats).forEach((m) => m?.dispose());
+    this.flatNormalMat.dispose();
+    this.aoMat.dispose();
+    this.aoBlurMat.dispose();
+    for (const sc of [this.aoScene, this.aoBlurScene]) sc.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
+  }
+
   /** Occlusion sampling radius (world units), depth bias, and how dark the blurred occlusion lands (Task 19 looks). */
   set(o: { radius: number; bias: number; strength: number }): void {
     this.aoMat.uniforms.radius.value = o.radius;

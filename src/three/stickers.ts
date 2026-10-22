@@ -256,6 +256,12 @@ export async function warmStickerProgram(bs: Pick<BrushScene, 'renderer' | 'came
   }
 }
 
+/** Release the warm-up material (scene teardown); the next warmStickerProgram makes a new one. */
+export function disposeWarmSticker(): void {
+  warmMaterial?.dispose();
+  warmMaterial = null;
+}
+
 // Stickers live inside their part's group (in part-local coords) so they move when the brush comes apart.
 const built = new WeakMap<StickerScene, THREE.Mesh[]>();
 
