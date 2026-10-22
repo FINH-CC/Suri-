@@ -68,10 +68,13 @@ try {
   add('enter Design', await timed(page, 'enter Design', () => page.click('#step-next')));
   await page.waitForSelector('#step-2:not([hidden])');
 
-  for (let i = 0; i < RUNS; i++) add('swatch (cap colour)', await timed(page, 'swatch', () => page.locator('#card-cap .swatch').nth(i % 8).click()));
+  // a swatch the colour rules allow and that is not the current one (Task 21 disables swatches that break a rule)
+  const swatch = (card: string) => page.locator(`#card-${card} .swatch:not([aria-disabled="true"]):not([aria-pressed="true"])`).first();
+  for (let i = 0; i < RUNS; i++) add('swatch (cap colour)', await timed(page, 'swatch', () => swatch('cap').click()));
   for (let i = 0; i < RUNS; i++) add('simple tile (grip)', await timed(page, 'grip', () => page.locator('#card-grip .tile:not(.upload)').nth(i % 4).click()));
   for (let i = 0; i < RUNS; i++) add('cap tile', await timed(page, 'cap', () => page.locator('#card-cap .tile:not(.upload)').nth(i % 6).click()));
-  for (let i = 0; i < RUNS; i++) add('head tile', await timed(page, 'head', () => page.locator('#card-head .tile:not(.upload)').nth(i % 3).click()));
+  // the head has no shapes since Task 21: its colour swatch is the head rebuild (pad + every bristle tuft)
+  for (let i = 0; i < RUNS; i++) add('head rebuild (colour)', await timed(page, 'head', () => swatch('head').click()));
   const finishes = ['Satin', 'Speckle', 'Matte'];
   for (let i = 0; i < RUNS; i++) add('finish', await timed(page, 'finish', () => page.locator('#finishes button', { hasText: finishes[i % 3] }).click()));
 
@@ -83,8 +86,8 @@ try {
     add('place sticker', await timed(page, 'place sticker', () => page.mouse.click(cx + ((i % 2) - 0.5) * 8, cy + (Math.floor(i / 2) - 1) * 30)));
   }
   const stickers = await page.locator('#sticker-list .list-row').count();
-  for (let i = 0; i < RUNS; i++) add('head tile, stickers on', await timed(page, 'head+stickers', () => page.locator('#card-head .tile:not(.upload)').nth(i % 3).click()));
-  for (let i = 0; i < RUNS; i++) add('handle colour, stickers on', await timed(page, 'swatch+stickers', () => page.locator('#card-handle .swatch').nth(i % 8).click()));
+  for (let i = 0; i < RUNS; i++) add('head rebuild, stickers on', await timed(page, 'head+stickers', () => swatch('head').click()));
+  for (let i = 0; i < RUNS; i++) add('handle colour, stickers on', await timed(page, 'swatch+stickers', () => swatch('handle').click()));
   for (let i = 0; i < RUNS; i++) add('grip tile, stickers on', await timed(page, 'grip+stickers', () => page.locator('#card-grip .tile:not(.upload)').nth(i % 4).click()));
 
   // name it
