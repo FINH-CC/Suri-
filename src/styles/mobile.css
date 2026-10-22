@@ -42,7 +42,6 @@
   section.part{padding:16px}
   .pp-f b{font-size:10.5px}.pp-f.name b{font-size:13px}.pp-f small{font-size:6.5px}
 }
-@media (max-width:480px){.steps .node{width:58px}}
 
 /* narrow stages (any viewport): undo/redo sit bottom-left and would collide with a bottom-centred toolbar,
    so the toolbar moves to the top of the stage (frameDefault keeps the brush clear of it) */
