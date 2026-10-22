@@ -4,6 +4,17 @@
     {
       "source": "/assets/(.*)",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    },
+    {
+      "source": "/assets/(.*)\\.(glb|webp|json)",
+      "headers": [
+        { "key": "Cache-Control", "value": "private, max-age=31536000, immutable" },
+        { "key": "Vary", "value": "Cookie" }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "no-store" }]
     }
   ]
 }
