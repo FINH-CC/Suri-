@@ -9,20 +9,6 @@ const el = () => document.getElementById('intro');
 const original = el()?.querySelector('.intro-inner')?.innerHTML ?? '';
 let finishing = false;
 
-/** Loaded bytes so far; `total` 0 (unknown length) creeps to 90% and holds. */
-export function showProgress(loaded: number, total: number): void {
-  const bar = el()?.querySelector<HTMLElement>('.intro-bar');
-  const fill = bar?.querySelector<HTMLElement>('i');
-  if (!bar || !fill) return;
-  if (total > 0) {
-    bar.classList.remove('indeterminate');
-    fill.style.width = `${Math.min(100, Math.max(0, (loaded / total) * 100))}%`;
-  } else if (!bar.classList.contains('indeterminate')) {
-    fill.style.width = '';
-    bar.classList.add('indeterminate');
-  }
-}
-
 /** Let the words land (1.5 s minimum on screen), jump "Lab", then slide the intro away and remove it. */
 export function finish(): void {
   const intro = el();

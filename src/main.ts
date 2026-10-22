@@ -179,7 +179,7 @@ async function boot(): Promise<void> {
     });
     const st = store;
     const [model, capFit] = await Promise.all([
-      loadModel(brushGlbUrl, brushMetaUrl, intro.showProgress),
+      loadModel(brushGlbUrl, brushMetaUrl, () => {}),
       fetch(capFitUrl).then((r) => {
         if (!r.ok) throw new Error(`cap-fit.json: HTTP ${r.status}`);
         return r.json() as Promise<Record<string, CapCore>>;

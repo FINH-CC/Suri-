@@ -46,19 +46,16 @@ input[type=file]{display:none}
 html.intro-on,html.intro-on body{overflow:hidden}
 .intro{position:fixed;inset:0;z-index:200;display:grid;place-items:center;background:var(--bg);will-change:transform}
 .intro-inner{text-align:center;padding:0 24px}
-.intro h2{margin:0;font-weight:300;font-size:20px;line-height:1.2;color:var(--ink)}
-.intro .w{display:inline-block;opacity:0;transform:translateY(.35em);animation:introIn .7s cubic-bezier(.2,.7,.2,1) forwards}
-.intro .w:nth-child(2){animation-delay:.12s}.intro .w:nth-child(3){animation-delay:.24s}.intro .w:nth-child(4){animation-delay:.36s}
-.intro .lab{transform-origin:50% 100%}
-.intro .season{margin:8px 0 0;font-size:11px;font-weight:300;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);opacity:0;animation:introFade .7s ease .7s forwards}
-/* load progress: a thin bar under the season line; indeterminate creeps to 90% and holds */
-.intro-bar{width:120px;height:2px;margin:14px auto 0;border-radius:2px;background:rgba(37,37,37,.13);overflow:hidden;opacity:0;animation:introFade .7s ease .7s forwards}
-.intro-bar i{display:block;height:100%;width:0;background:var(--ink);border-radius:inherit;transition:width .3s ease}
-.intro-bar.indeterminate i{animation:introCreep 6s cubic-bezier(.1,.6,.2,1) forwards}
+/* Meet / SURI wordmark / Lab, stacked and centred */
+.intro h2{margin:0;display:flex;flex-direction:column;align-items:center;gap:10px;font-weight:300;font-size:20px;line-height:1.2;color:var(--ink)}
+.intro .w{display:block;opacity:0;transform:translateY(.35em);animation:introIn .7s cubic-bezier(.2,.7,.2,1) forwards}
+.intro .w:nth-child(2){animation-delay:.12s}.intro .w:nth-child(3){animation-delay:.24s}
+.intro .logo img{display:block;height:28px;width:auto}
+.intro .lab{font-weight:500;transform-origin:50% 100%}
+.intro .season{margin:14px 0 0;font-size:11px;font-weight:300;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);opacity:0;animation:introFade .7s ease .7s forwards}
 .intro .err{margin:0 0 18px;font-weight:300;font-size:20px;line-height:1.2;color:var(--ink)}
 @keyframes introIn{to{opacity:1;transform:none}}
 @keyframes introFade{to{opacity:1}}
-@keyframes introCreep{from{width:0}to{width:90%}}
 /* Lab: squash, leap, stretch, land, settle */
 .intro.jump .lab{animation:labJump .9s cubic-bezier(.3,0,.3,1) forwards;opacity:1}
 @keyframes labJump{
@@ -71,8 +68,7 @@ html.intro-on,html.intro-on body{overflow:hidden}
   100%{transform:none}}
 .intro.out{transform:translateY(-100%);transition:transform .95s cubic-bezier(.76,0,.24,1)}
 @media (prefers-reduced-motion:reduce){
-  .intro .w,.intro .season,.intro-bar{animation:none;opacity:1;transform:none}
-  .intro-bar.indeterminate i{animation:none;width:90%}
+  .intro .w,.intro .season{animation:none;opacity:1;transform:none}
   .intro.jump .lab{animation:none}
   .intro.out{transform:none;opacity:0;transition:opacity .4s ease}}
 
