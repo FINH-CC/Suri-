@@ -1,5 +1,6 @@
 import { CHARACTERS, DEFAULT } from '../data/characters';
 import type { CharacterId, DesignData, Sticker } from '../data/characters';
+import { check } from '../data/colourRules';
 import { SWATCHES } from '../data/palette';
 import { FINISHES, PART, PARTS, STICKERS } from '../data/parts';
 import type { PartId } from '../data/parts';
@@ -25,8 +26,11 @@ export function validate(input: unknown, opts: { uploads?: Partial<Record<PartId
     const v = sp[p.id];
     parts[p.id] = (v === 'upload' && opts.uploads?.[p.id]) || has(p.options, v) ? (v as string) : DEFAULT.parts[p.id];
     const c = typeof sc[p.id] === 'string' ? (sc[p.id] as string).toLowerCase() : '';
-    colours[p.id] = SWATCHES.some((w) => w[0] === c) ? c : DEFAULT.colours[p.id];
+    colours[p.id] = SWATCHES.some((w) => w[0] === c) ? c : ''; // not a swatch: the whole brush is repaired below
   }
+  const character = has(CHARACTERS, s.character) ? (s.character as CharacterId) : '';
+  // never an invalid brush (legacy link, old saved design, unknown colour): use the character's colours, or the default's
+  if (!check(colours).ok) Object.assign(colours, character ? CHARACTERS[character].colours : DEFAULT.colours);
   const stickers: Sticker[] = [];
   if (Array.isArray(s.stickers)) {
     for (const raw of s.stickers.slice(0, 40)) {
@@ -45,7 +49,7 @@ export function validate(input: unknown, opts: { uploads?: Partial<Record<PartId
     parts, colours, stickers,
     name: cleanName(s.name),
     finish: has(FINISHES, s.finish) ? (s.finish as Design['finish']) : 'matte',
-    character: has(CHARACTERS, s.character) ? (s.character as CharacterId) : '',
+    character,
   };
 }
 

@@ -1,4 +1,4 @@
-import { N, PRESETS } from './palette';
+import { PRESETS } from './palette';
 import type { FinishId, PartId, StickerType } from './parts';
 
 export type CharacterId = 'pip' | 'puff' | 'splash' | 'nova' | 'blank';
@@ -41,20 +41,20 @@ export const CHARACTERS: Record<CharacterId, CharacterDef> = {
   },
   puff: {
     name: 'Puff', tag: 'A sleepy cloud who never skips bedtime brushing.',
-    parts: { cap: 'cloud', head: 'ears', grip: 'dots', handle: 'core', button: 'core', mount: 'cloud' }, colours: presetC('Lilac B'), finish: 'satin',
+    parts: { cap: 'cloud', head: 'plain', grip: 'dots', handle: 'core', button: 'core', mount: 'cloud' }, colours: presetC('Lilac B'), finish: 'satin',
   },
   splash: {
     name: 'Splash', tag: 'A raindrop who always races to the sink first.',
-    parts: { cap: 'hat', head: 'spots', grip: 'rings', handle: 'core', button: 'core', mount: 'arch' }, colours: presetC('Coral A'), finish: 'speckle',
+    parts: { cap: 'hat', head: 'plain', grip: 'rings', handle: 'core', button: 'core', mount: 'arch' }, colours: presetC('Coral A'), finish: 'speckle',
   },
   nova: {
     name: 'Nova', tag: 'A night-sky dreamer who brushes under the stars.',
-    parts: { cap: 'bunny', head: 'spots', grip: 'ribs', handle: 'core', button: 'core', mount: 'arch' }, colours: presetC('Blue B'), finish: 'satin',
+    parts: { cap: 'bunny', head: 'plain', grip: 'ribs', handle: 'core', button: 'core', mount: 'arch' }, colours: presetC('Yellow B'), finish: 'satin',
   },
   blank: {
     name: '', tag: 'A plain brush. Make it entirely yours.',
     parts: { cap: 'bubble', head: 'plain', grip: 'smooth', handle: 'core', button: 'core', mount: 'original' },
-    colours: { cap: N, head: N, grip: N, handle: N, button: N, mount: N }, finish: 'matte',
+    colours: presetC('Lilac A'), finish: 'matte',
   },
 };
 

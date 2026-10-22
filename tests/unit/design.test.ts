@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT } from '../../src/data/characters';
+import { CHARACTERS, DEFAULT } from '../../src/data/characters';
+import { check } from '../../src/data/colourRules';
 import { cleanName, decode, encode, validate } from '../../src/state/design';
 
 describe('validate', () => {
@@ -14,6 +15,24 @@ describe('validate', () => {
     const v = validate({ parts: { cap: 'nope' }, stickers: [{ t: 'ghost', p: 'cap' }] });
     expect(v.parts.cap).toBe(DEFAULT.parts.cap);
     expect(v.stickers.length).toBe(0);
+  });
+  it('legacy head styles become plain', () => {
+    expect(validate({ parts: { head: 'ears' } }).parts.head).toBe('plain');
+    expect(validate({ parts: { head: 'spots' } }).parts.head).toBe('plain');
+  });
+  it('repairs a brush that breaks the colour rules with the character colours, else the default', () => {
+    const bad = { cap: '#adaae1', head: '#66bf8d', grip: '#adaae1', handle: '#dfd7ef', button: '#adaae1', mount: '#dfd7ef' }; // two dark sets
+    expect(check(bad).ok).toBe(false);
+    expect(validate({ colours: bad, character: 'pip' }).colours).toEqual(CHARACTERS.pip.colours);
+    expect(validate({ colours: bad }).colours).toEqual(DEFAULT.colours);
+    // the old neutral and blue are no longer swatches: the whole brush is repaired, not one part
+    const legacy = { cap: '#6fa5dc', head: '#ebeaeb', grip: '#6fa5dc', handle: '#ebeaeb', button: '#6fa5dc', mount: '#ebeaeb' };
+    expect(validate({ colours: legacy, character: 'splash' }).colours).toEqual(CHARACTERS.splash.colours);
+    expect(validate({ colours: { ...CHARACTERS.blank.colours, cap: '#ebeaeb' }, character: 'blank' }).colours).toEqual(CHARACTERS.blank.colours);
+  });
+  it('keeps a valid brush as it is', () => {
+    const ok = { cap: '#adaae1', head: '#adaae1', grip: '#adaae1', handle: '#d0e3cf', button: '#66bf8d', mount: '#d0e3cf' }; // Mix 1
+    expect(validate({ colours: ok, character: 'pip' }).colours).toEqual(ok);
   });
   it('sanitises name', () => {
     expect(validate({ name: 'a<b>cdefghijklmnopq' }).name).toBe('abcdefghijklmn');
@@ -88,7 +107,8 @@ describe('extra', () => {
     expect(d!.stickers.length).toBe(1);
   });
   it('lowercases colours', () => {
-    expect(validate({ colours: { cap: '#ADAAE1' } }).colours.cap).toBe('#adaae1');
+    const up = Object.fromEntries(Object.entries(CHARACTERS.puff.colours).map(([k, v]) => [k, v.toUpperCase()]));
+    expect(validate({ colours: up }).colours).toEqual(CHARACTERS.puff.colours);
   });
   it('skips bad stickers and caps at 40', () => {
     expect(validate({ stickers: 'x' }).stickers).toEqual([]);

@@ -94,9 +94,9 @@ test.describe('share, my designs, undo and redo', () => {
     const undo = page.locator('#undo'), redo = page.locator('#redo');
     await expect(undo).toBeDisabled();
     await expect(redo).toBeDisabled();
-    const before = '#6fa5dc'; // the default cap colour (nothing saved yet)
+    const before = '#fae59d'; // the default cap colour (nothing saved yet)
     await page.locator('#card-cap .swatch').nth(4).click();
-    const after = '#66bf8d';
+    const after = '#d0e3cf';
     await expect.poll(() => cap(page)).toBe(after);
     await expect(undo).toBeEnabled();
     await expect(redo).toBeDisabled();

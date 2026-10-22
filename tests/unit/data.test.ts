@@ -5,17 +5,28 @@ import { CHARACTERS, DEFAULT } from '../../src/data/characters';
 
 describe('data modules', () => {
   it('palette sizes and names', () => {
-    expect(SWATCHES.length).toBe(11);
-    expect(PRESETS.length).toBe(10);
+    expect(SWATCHES.length).toBe(8);
+    expect(SWATCHES.map(([h]) => h)).toEqual(['#dfd7ef', '#adaae1', '#fae59d', '#fbbe6e', '#d0e3cf', '#66bf8d', '#fda691', '#e86239']);
+    expect(PRESETS.length).toBe(13);
     expect(PRESETS[1].name).toBe('Lilac B');
-    expect(swatchName('#ebeaeb')).toBe('Soft neutral');
+    expect(swatchName('#adaae1')).toBe('Lilac');
+    expect(swatchName('#dfd7ef')).toBe('Lilac light');
+    expect(swatchName('#ebeaeb')).toBe('#EBEAEB'); // the old neutral is no longer a swatch
     expect(HEX.test('#adaae1')).toBe(true);
   });
   it('characters and parts', () => {
-    expect(CHARACTERS.puff.colours.cap).toBe('#adaae1');
+    expect(CHARACTERS.puff.colours).toEqual(PRESETS.find((p) => p.name === 'Lilac B')!.c);
+    expect(CHARACTERS.pip.colours).toEqual(PRESETS.find((p) => p.name === 'Green B')!.c);
+    expect(CHARACTERS.splash.colours).toEqual(PRESETS.find((p) => p.name === 'Coral A')!.c);
+    expect(CHARACTERS.nova.colours).toEqual(PRESETS.find((p) => p.name === 'Yellow B')!.c);
+    expect(CHARACTERS.blank.colours).toEqual(PRESETS.find((p) => p.name === 'Lilac A')!.c);
+    expect(Object.values(CHARACTERS).map((c) => c.parts.head)).toEqual(['plain', 'plain', 'plain', 'plain', 'plain']);
     expect(PART.cap.options.bubble).toBe('Pebble');
     expect(DEFAULT.name).toBe('Nova');
     expect(DEFAULT.parts).not.toBe(CHARACTERS.nova.parts);
+  });
+  it('the head has no shapes, only colour', () => {
+    expect(PART.head.options).toEqual({ plain: 'Plain' });
   });
   it('six parts, no charm anywhere', () => {
     expect(PARTS.length).toBe(6);

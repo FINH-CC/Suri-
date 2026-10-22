@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { DEFAULT } from '../data/characters';
-import { FAM, N, PRESETS, SWATCHES } from '../data/palette';
+import { allowed, whyNot } from '../data/colourRules';
+import { PRESET_GROUPS, SETS, SWATCHES } from '../data/palette';
 import { FINISHES, PART, PARTS } from '../data/parts';
 import type { FinishId, PartId } from '../data/parts';
 import { validate } from '../state/design';
@@ -18,19 +19,24 @@ import { UPLOAD_COPY, parseStl } from './upload';
 const esc = (t: string) => t.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const COLOUR_ONLY = (id: PartId) => Object.keys(PART[id].options).length === 1; // handle and button: just pick a colour
 
-/** A random build (legacy surprise 1433-1442, minus the charm): one family leads, a second may join. */
+/**
+ * A random build that always passes the colour rules: a lead set and a second set (maybe the same one); only the
+ * lead's dark tone is used, the handle is always a light tone, and the button never matches the handle.
+ */
 export function surpriseDesign(d: Design, rand: () => number): Design {
-  const pick = <T>(a: T[]): T => a[Math.floor(rand() * a.length)];
-  const fams = Object.values(FAM), f = pick(fams), g = pick(fams);
+  const pick = <T>(a: T[]): T => a[Math.min(a.length - 1, Math.floor(rand() * a.length))];
+  const sets = Object.values(SETS), f = pick(sets), g = pick(sets);
   const parts = {} as Design['parts'];
   for (const p of PARTS) parts[p.id] = pick(Object.keys(p.options));
+  const pool = [...new Set([f.dark, f.light, g.light])];
+  const handle = pick([...new Set([f.light, g.light])]);
   const colours: Design['colours'] = {
-    cap: f.bold,
-    grip: pick([f.bold, g.bold]),
-    button: pick([f.bold, g.bold]),
-    head: pick([f.light, N]),
-    handle: pick([f.light, N]),
-    mount: pick([f.light, N, g.light]),
+    cap: f.dark,
+    head: pick(pool),
+    grip: pick(pool),
+    handle,
+    button: pick(pool.filter((c) => c !== handle)),
+    mount: pick(pool),
   };
   return { ...d, parts, colours, finish: pick(Object.keys(FINISHES) as FinishId[]), character: '' };
 }
@@ -55,14 +61,21 @@ export function mountDesign(store: Store, scene: BrushScene): () => void {
   const presetsEl = $('presets'), finishesEl = $('finishes');
   function renderPresets(d: Design) {
     presetsEl.innerHTML = '';
-    for (const pr of PRESETS) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'preset';
-      b.setAttribute('aria-pressed', String(PARTS.every((p) => d.colours[p.id] === pr.c[p.id])));
-      b.innerHTML = `<i style="background:conic-gradient(${pr.c.cap} 0 50%,${pr.c.mount} 0)"></i>${esc(pr.name)}`;
-      b.addEventListener('click', () => keepFocus(presetsEl, b, '.preset', () => store.update({ colours: { ...pr.c } })));
-      presetsEl.appendChild(b);
+    for (const grp of PRESET_GROUPS) {
+      const box = document.createElement('div');
+      box.className = 'preset-group';
+      box.innerHTML = `<h3>${esc(grp.title)}</h3><p class="sub">${esc(grp.sub)}</p><div class="preset-grid"></div>`;
+      const grid = box.querySelector('.preset-grid')!;
+      for (const pr of grp.presets) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'preset';
+        b.setAttribute('aria-pressed', String(PARTS.every((p) => d.colours[p.id] === pr.c[p.id])));
+        b.innerHTML = `<i style="background:conic-gradient(${pr.c.head} 0 50%,${pr.c.handle} 0)"></i>${esc(pr.name)}`;
+        b.addEventListener('click', () => keepFocus(presetsEl, b, '.preset', () => store.update({ colours: { ...pr.c } })));
+        grid.appendChild(b);
+      }
+      presetsEl.appendChild(box);
     }
   }
   function renderFinishes(d: Design) {
@@ -101,34 +114,46 @@ export function mountDesign(store: Store, scene: BrushScene): () => void {
     cardsEl.appendChild(sec);
   }
 
-  function renderCard(id: PartId, d: Design) {
+  /** The colour row under a card's title; it depends on the whole brush, since the rules span every part. */
+  function renderSwatches(id: PartId, d: Design) {
     const p = PART[id], sec = cards[id], hex = d.colours[id];
+    // a row of circles right under the title, the current one ringed
+    const row = document.createElement('div');
+    row.className = 'swatch-row';
+    row.setAttribute('role', 'group');
+    row.setAttribute('aria-label', `${p.name} colour`);
+    const ok = new Set(allowed(d.colours, id));
+    for (const [h, n] of SWATCHES) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'swatch';
+      b.style.background = h;
+      b.setAttribute('aria-pressed', String(h === hex));
+      // outside the colour rules: shown but not pickable, and the title says why
+      const why = h === hex || ok.has(h) ? '' : whyNot(d.colours, id, h);
+      b.title = why ? `${n}: ${why}` : n;
+      b.setAttribute('aria-label', `${p.name} colour: ${n}${why ? ` (${why})` : ''}`);
+      if (why) b.setAttribute('aria-disabled', 'true');
+      b.addEventListener('click', () => {
+        if (b.getAttribute('aria-disabled') === 'true') return;
+        keepFocus(sec, b, '.swatch', () => store.update({ colours: { ...store.get().colours, [id]: h } }));
+      });
+      row.appendChild(b);
+    }
+    const old = sec.querySelector('.swatch-row');
+    if (old) old.replaceWith(row);
+    else sec.querySelector('.part-head')!.after(row);
+  }
+
+  function renderCard(id: PartId, d: Design) {
+    const p = PART[id], sec = cards[id];
     cardKey[id] = keyFor(id, d);
     const colourOnly = COLOUR_ONLY(id);
     sec.innerHTML = colourOnly
       ? `<div class="part-head"><h2>${esc(p.name)} colour</h2></div>`
       : `<div class="part-head"><h2>Pick your ${esc(p.name.toLowerCase())}</h2></div><p class="sub">${esc(p.sub)}</p><div class="tiles"></div>`;
 
-    // colour: a row of circles right under the title, the current one ringed
-    const row = document.createElement('div');
-    row.className = 'swatch-row';
-    row.setAttribute('role', 'group');
-    row.setAttribute('aria-label', `${p.name} colour`);
-    for (const [h, n] of SWATCHES) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'swatch';
-      b.style.background = h;
-      b.title = n;
-      b.setAttribute('aria-label', `${p.name} colour: ${n}`);
-      b.setAttribute('aria-pressed', String(h === hex));
-      b.addEventListener('click', () => {
-        store.update({ colours: { ...store.get().colours, [id]: h } });
-        sec.querySelector<HTMLElement>('.swatch[aria-pressed="true"]')?.focus();
-      });
-      row.appendChild(b);
-    }
-    sec.querySelector('.part-head')!.after(row);
+    renderSwatches(id, d);
     if (colourOnly) return;
 
     const tiles = sec.querySelector('.tiles')!;
@@ -206,7 +231,11 @@ export function mountDesign(store: Store, scene: BrushScene): () => void {
   unsubs.push(store.subscribe((next, prev) => {
     if (PARTS.some((p) => next.colours[p.id] !== prev.colours[p.id])) renderPresets(next);
     if (next.finish !== prev.finish) renderFinishes(next);
-    for (const p of PARTS) if (keyFor(p.id, next) !== cardKey[p.id]) renderCard(p.id, next);
+    const recoloured = PARTS.some((p) => next.colours[p.id] !== prev.colours[p.id]);
+    for (const p of PARTS) {
+      if (keyFor(p.id, next) !== cardKey[p.id]) renderCard(p.id, next);
+      else if (recoloured) renderSwatches(p.id, next); // what's allowed here may have changed
+    }
   }));
 
   return () => {
