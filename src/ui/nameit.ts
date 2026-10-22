@@ -81,7 +81,7 @@ export function mountNameIt(store: Store, scene: BrushScene): () => void {
     boxEl.style.background = mixHex(capHex, '#ffffff', 0.62);
     boxEl.innerHTML = `<div class="top"><span class="wm"><img src="${LOGO}" alt="SURI">KIDS</span></div><span class="ssn">SEASON 01</span>
     <span class="disc" style="background:${mixHex(capHex, '#ffffff', 0.18)}"></span><img class="br" src="${thumb}" alt="">
-    <div class="bottom"><span class="nm${name ? '' : ' ph'}">${esc(name || 'Name me')}</span><span class="desc">Electric toothbrush<br>Designed by a kid, built by SURI</span></div>`;
+    <div class="bottom"><span class="nm${name ? '' : ' ph'}">${esc(name || 'Name me')}</span><span class="desc">Designed by a kid, built by SURI</span></div>`;
     const date = new Date();
     const issued = `${String(date.getDate()).padStart(2, '0')} ${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
     const [l1, l2] = mrzLines(d, date);
@@ -103,7 +103,7 @@ export function mountNameIt(store: Store, scene: BrushScene): () => void {
     </div>
     <div class="pp-mrz">${esc(l1)}\n${esc(l2)}</div>`;
     // the section must be laid out for the fit to measure anything
-    requestAnimationFrame(() => fitName(boxEl.querySelector('.nm'), 34, 18));
+    requestAnimationFrame(() => fitName(boxEl.querySelector('.nm'), 26, 16));
   }
 
   const visible = () => !section.hidden;

@@ -19,6 +19,12 @@ test.describe('name it and hand over', () => {
     await expect(page.locator('#box-mock .nm')).toHaveText('Puff');
     await expect(page.locator('#passport .pp-mrz')).toContainText('PUFF');
     await expect(page.locator('#box-mock img.br')).toHaveAttribute('src', /^data:image/, { timeout: 30_000 });
+    // the box front: one-line description, the name at most 26 px
+    const desc = page.locator('#box-mock .desc');
+    await expect(desc).toHaveText('Designed by a kid, built by SURI');
+    const lines = await desc.evaluate((el) => Math.round(el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).lineHeight)));
+    expect(lines).toBe(1);
+    await expect.poll(() => page.locator('#box-mock .nm').evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeLessThanOrEqual(26);
 
     await page.locator('#step-next').click();
     await expect(page.locator('#step-4')).toBeVisible();
