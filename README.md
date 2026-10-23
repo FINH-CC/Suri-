@@ -77,6 +77,14 @@ The render's look (lights, studio, shadows, occlusion, material response) lives 
 `npm run capture-reference -- --target new --url 'http://localhost:3240/?look=parity' --out <dir>`.
 `npx tsx scripts/compare-final.ts` rebuilds the before/after sheet from `docs/reference/new` and `docs/reference/final`.
 
+## Sound
+
+`src/assets/audio/` holds the client's two files: `click.mp3` plays when a click on the page changes the brush, and
+`backloop.mp3` is the menu music, looped gaplessly through Web Audio at 15% (`src/ui/sound.ts`). Both load after the
+brush shows and, like the model, only for an unlocked visitor. The speaker button at the stage's bottom-right mutes
+both, remembered per browser. Browsers start audio only after a gesture, so the music begins on the password Enter or
+the first tap.
+
 ## Regenerate generated assets
 
 | What | Command | Writes |

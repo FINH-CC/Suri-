@@ -27,6 +27,7 @@ import { mountDesigns } from './ui/designs';
 import { mountShare } from './ui/share';
 import { mountHandover } from './ui/handover';
 import { mountNameIt } from './ui/nameit';
+import { mountSound } from './ui/sound';
 import { mountStart } from './ui/start';
 import { toast } from './ui/toast';
 import brushGlbUrl from './assets/model/brush.glb?url';
@@ -235,6 +236,7 @@ async function boot(): Promise<void> {
     if (import.meta.env.DEV) (window as unknown as { __scene?: BrushScene }).__scene = s;
     if (import.meta.env.DEV && new URLSearchParams(location.search).has('tiles')) void import('./dev/tiles').then((m) => m.installTileRenderer(s));
     intro.finish();
+    unsubs.push(mountSound(st, ac.signal)); // after the brush shows: the music never slows the load
     // warm the sticker program while the user looks at the brush (first placement then skips a shader compile)
     const idle = window.requestIdleCallback ?? ((fn: () => void) => setTimeout(fn, 300));
     idle(() => void warmStickerProgram(s).catch((e) => console.warn('[stickers] warm-up failed', e)));
