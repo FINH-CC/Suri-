@@ -33,14 +33,18 @@ Playwright renders with SwiftShader (software GL), so it checks behaviour, not l
 The configurator only opens after the right password is typed on the loader, and the check is on the server: without
 a valid unlock cookie, Vercel refuses the brush model, its data and the tiles.
 
-- `api/unlock.ts` (POST `{ password }`) compares against the `SURI_PASSWORD` environment variable in constant time.
+- `api/unlock.js` (POST `{ password }`) compares against the `SURI_PASSWORD` environment variable in constant time.
   Right: `204` and an HttpOnly cookie `suri_gate` for 30 days. Wrong: `401` after ~600 ms. No variable set: `503`
   and the loader says "This preview isn't set up yet." (it never falls open).
-- `api/gate.ts` (GET) tells the page whether this browser is unlocked (the cookie itself is HttpOnly).
-- `middleware.ts` (Vercel Routing Middleware on `/assets/*`) answers `401` for `.glb`, `.webp` and `.json` without a
-  valid cookie. JS, CSS and fonts stay public so the loader can draw the field. Gated files are served
-  `private, max-age=31536000, immutable` with `Vary: Cookie` (`vercel.json`), so no shared cache keeps them.
-- The cookie value is an HMAC of a fixed message keyed by the password (`lib/gate.ts`), so **changing
+- `api/gate.js` (GET) tells the page whether this browser is unlocked (the cookie itself is HttpOnly).
+- `middleware.js` (Vercel Routing Middleware, no matcher so it sees every path) normalises the path first (decodes
+  escapes, collapses `//`, resolves `..`, drops a trailing `/`, ignores case). Under `/assets/` only `.js`, `.css` and
+  `.woff2` are public (the loader needs them); everything else there (model, data, tiles, any other type) answers
+  `401` without a valid cookie, and with one is served `private, max-age=31536000, immutable` + `Vary: Cookie`, so no
+  shared cache keeps it. Outside `/assets/` (the page, the wordmark) stays public.
+- The server files (`api/`, `lib/`, `middleware.js`) are plain ESM JavaScript with JSDoc types, checked by
+  `npm run typecheck`, so Vercel runs them without compiling them with the project's TypeScript.
+- The cookie value is an HMAC of a fixed message keyed by the password (`lib/gate.js`), so **changing
   `SURI_PASSWORD` signs everyone out**; they type the new password once.
 
 Set the password in Vercel → Project `suri` → Settings → Environment Variables as `SURI_PASSWORD`, for Production and
@@ -92,8 +96,8 @@ Vercel builds from source (`npm run build`, output `dist`, see `vercel.json`; `.
 and tests out of the upload). The model, cap fit, tiles and fonts live in `src/assets/` and are imported through
 Vite (`?url` imports in `src/main.ts`, `import.meta.glob` in `src/assets/tiles.ts`, relative `url()` in
 `src/styles/base.css`), so every build gives each one a content-hashed name under `/assets/`. Only `/assets/*` is
-served with a year-long immutable cache (`public` for JS, CSS and fonts; `private` for the gated model, data and
-tiles); `index.html` and the rest of `public/` keep Vercel's
+served with a year-long immutable cache (`public` for JS, CSS and fonts from `vercel.json`; `private` for the gated
+model, data and tiles, set by `middleware.js`); `index.html` and the rest of `public/` keep Vercel's
 default revalidating cache. Regenerating a file changes its hash, so returning visitors pick it up on their next visit
 with no renaming. The hashed brush glb is also preloaded from `index.html` (a small plugin in `vite.config.ts`), but
 only for a browser that has unlocked the password gate (the readable `suri_unlocked` hint cookie); see Password gate.

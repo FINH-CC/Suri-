@@ -24,7 +24,7 @@ export async function tryUnlock(password: string): Promise<UnlockResult> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ password }),
   });
-  if (r.status === 204 || r.ok) return 'ok';
+  if (r.status === 204) return 'ok'; // only the server's explicit unlock answer counts
   if (r.status === 401) return 'wrong';
   if (r.status === 503) return 'not-configured';
   throw new Error(`unlock: HTTP ${r.status}`);

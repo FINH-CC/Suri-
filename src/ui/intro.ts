@@ -61,7 +61,7 @@ const ARROW = '<svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke
  */
 export function askPassword(submit: (password: string) => Promise<'ok' | 'wrong' | 'not-configured'>): Promise<'ok' | 'not-configured'> {
   const inner = el()?.querySelector<HTMLElement>('.intro-inner');
-  if (!inner) return Promise.resolve('ok');
+  if (!inner) return Promise.resolve('not-configured'); // no loader to ask on: never open by default
   inner.querySelector('.gate')?.remove();
   const form = document.createElement('form');
   form.className = 'gate';

@@ -2,19 +2,22 @@
   "outputDirectory": "dist",
   "headers": [
     {
-      "source": "/assets/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
-    },
-    {
-      "source": "/assets/(.*)\\.(glb|webp|json)",
+      "source": "/assets/(.*)\\.(js|css|woff2)",
       "headers": [
-        { "key": "Cache-Control", "value": "private, max-age=31536000, immutable" },
-        { "key": "Vary", "value": "Cookie" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
       ]
     },
     {
       "source": "/api/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
     }
   ]
 }

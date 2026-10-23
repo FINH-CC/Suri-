@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { defineConfig } from 'vite';
 import type { Plugin } from 'vite';
 import { decide, isGatedPath, tokenFor } from './lib/gate.js';
+import type { GateRules } from './lib/gate.js';
 import { handleGate, handleUnlock } from './lib/handlers.js';
 
 /** Dev/preview only: `VITE_GATE=1` turns the password gate on locally (see gateEmulation). */
@@ -36,13 +37,15 @@ function preloadBrush(): Plugin {
 }
 
 /**
- * Local stand-in for the Vercel side of the password gate (api/gate.ts, api/unlock.ts, middleware.ts), installed on
+ * Local stand-in for the Vercel side of the password gate (api/gate.js, api/unlock.js, middleware.js), installed on
  * the dev and preview servers only when VITE_GATE=1, with the password from process.env.SURI_PASSWORD. It runs the
  * same lib/ handlers and decision; it lives in this config, so nothing of it reaches dist/.
  * In dev the model and tiles are served from /src/assets/: those bare file requests are gated too, while Vite's own
  * module requests for them (`?url`, `?import`) stay open, as the JS bundle does in production.
  */
 function gateEmulation(): Plugin {
+  // the built files under /assets/ (preview) plus the sources Vite serves in dev; tiles.ts is a module there
+  const DEV_RULES: GateRules = { prefixes: ['/assets/', '/src/assets/'], publicExt: ['js', 'css', 'woff2', 'ts'] };
   const MODULE_QUERY = /[?&](url|import|raw|inline|worker|direct)\b/;
   async function toRequest(req: IncomingMessage): Promise<Request> {
     const chunks: Buffer[] = [];
@@ -69,10 +72,9 @@ function gateEmulation(): Plugin {
         const env = { password: process.env.SURI_PASSWORD, secure: false };
         if (url.pathname === '/api/gate') return send(res, await handleGate(await toRequest(req), env));
         if (url.pathname === '/api/unlock') return send(res, await handleUnlock(await toRequest(req), env));
-        const prefixes = ['/assets/', '/src/assets/'];
-        if (isGatedPath(url.pathname, prefixes) && !MODULE_QUERY.test(url.search)) {
+        if (isGatedPath(url.pathname, DEV_RULES) && !MODULE_QUERY.test(url.search)) {
           const expected = env.password ? await tokenFor(env.password) : null;
-          if (decide(url.pathname, req.headers.cookie, expected, prefixes) === 'deny') {
+          if (decide(url.pathname, req.headers.cookie, expected, DEV_RULES) === 'deny') {
             res.statusCode = 401;
             res.setHeader('Cache-Control', 'no-store');
             return res.end('Locked');
