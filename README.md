@@ -81,7 +81,7 @@ The render's look (lights, studio, shadows, occlusion, material response) lives 
 
 `src/assets/audio/` holds the client's two files: `click.mp3` plays when a click on the page changes the brush, and
 `backloop.mp3` is the menu music, looped gaplessly through Web Audio at 15% (`src/ui/sound.ts`). Both load after the
-brush shows and, like the model, only for an unlocked visitor. The speaker button at the stage's bottom-right mutes
+brush shows and, like the model, only for an unlocked visitor. The speaker button at the top right of the header mutes
 both, remembered per browser. Browsers start audio only after a gesture, so the music begins on the password Enter or
 the first tap.
 

@@ -10,3 +10,7 @@
 .icon-btn{display:flex;align-items:center;gap:8px;background:none;border:0;cursor:pointer;padding:8px 10px;font-size:14px;font-weight:var(--reg);border-radius:var(--pill)}
 .icon-btn:hover{background:var(--tile)}
 .icon-btn svg{width:22px;height:22px}
+/* sound on/off: icon only, top right; the struck-through speaker shows when muted */
+.icon-btn.sound{padding:8px}
+.icon-btn.sound .mute,.icon-btn.sound.off .wave{display:none}
+.icon-btn.sound.off .mute{display:inline}

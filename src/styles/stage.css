@@ -29,8 +29,3 @@
 .undo.redo:hover{transform:rotate(12deg)}
 .undo[disabled]{opacity:.4;cursor:default;pointer-events:none}
 .undo:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
-/* sound on/off, bottom-right, same round button as undo */
-.undo.sound{left:auto;right:16px}
-.undo.sound:hover{transform:scale(1.06)}
-.undo.sound .mute,.undo.sound.off .wave{display:none}
-.undo.sound.off .mute{display:inline}
