@@ -92,6 +92,12 @@ Run cap-fit after the model changes, and tiles after the model, the cap fit, mat
     npx vercel@latest deploy --scope finhcc            # preview
     npx vercel@latest deploy --prod --scope finhcc     # production (only with Alexis's go-ahead)
 
+Deploy from a clean checkout of a committed, reviewed commit (the CLI uploads the working tree, so uncommitted edits
+would ship): `git worktree add --detach /tmp/suri-deploy <commit>`, copy `.vercel/` into it, deploy from there, then
+`git worktree remove /tmp/suri-deploy`. Production is https://suri-finhcc.vercel.app (Vercel team `finhcc`, project
+`suri`). Deploys are by CLI only: the GitHub repo `FINH-CC/Suri-` is not connected to Vercel, because the Vercel
+GitHub app has no access to it; the FINH-CC account owner must grant that before pushes can deploy automatically.
+
 Vercel builds from source (`npm run build`, output `dist`, see `vercel.json`; `.vercelignore` keeps `legacy/`, `docs/`
 and tests out of the upload). The model, cap fit, tiles and fonts live in `src/assets/` and are imported through
 Vite (`?url` imports in `src/main.ts`, `import.meta.glob` in `src/assets/tiles.ts`, relative `url()` in
