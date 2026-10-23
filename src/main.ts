@@ -238,6 +238,7 @@ async function boot(): Promise<void> {
     // warm the sticker program while the user looks at the brush (first placement then skips a shader compile)
     const idle = window.requestIdleCallback ?? ((fn: () => void) => setTimeout(fn, 300));
     idle(() => void warmStickerProgram(s).catch((e) => console.warn('[stickers] warm-up failed', e)));
+    s.indexPicking(); // hover and tap hit tests: index the parts' triangles before the mouse reaches the brush
   } catch (err) {
     ac.abort(); // undo any half-finished mount so Retry starts clean
     unsubs.forEach((u) => u());

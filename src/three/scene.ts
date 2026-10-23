@@ -13,6 +13,7 @@ import { LOOKS } from './looks';
 import type { Look } from './looks';
 import { makeEnv, makeKeyLight, makeRenderer, setKeyLight } from './renderer';
 import { disposeSnapshots } from './snapshot';
+import { indexMesh } from './pick-index';
 import { SSAO } from './ssao';
 import { disposeWarmSticker } from './stickers';
 
@@ -535,7 +536,23 @@ export class BrushScene {
     const ndc = new THREE.Vector2(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
     this.raycaster.setFromCamera(ndc, this.camera);
     this.raycaster.far = Infinity;
-    return this.raycaster.intersectObjects(this.pickMeshes(), false)[0];
+    this.raycaster.firstHitOnly = true; // nearest hit per mesh; intersectObjects still sorts across meshes
+    const meshes = this.pickMeshes();
+    meshes.forEach(indexMesh); // a part swapped in since indexPicking() builds its index here, once
+    return this.raycaster.intersectObjects(meshes, false)[0];
+  }
+
+  /** Build the hit-test index of every part in idle time, one mesh per slice, so the first hover never pays for it. */
+  indexPicking(): void {
+    const idle = window.requestIdleCallback ?? ((fn: () => void) => setTimeout(fn, 50));
+    const todo = this.pickMeshes().filter((m) => !m.geometry.boundsTree);
+    const next = () => {
+      const m = todo.shift();
+      if (!m) return;
+      indexMesh(m);
+      idle(next);
+    };
+    idle(next);
   }
 
   partAt(clientX: number, clientY: number): PartId | null {
