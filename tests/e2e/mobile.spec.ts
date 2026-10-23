@@ -39,7 +39,7 @@ test.describe('phone layout', () => {
 
     // phone chrome: nav links hidden, icon-only header buttons, no visible scrollbars
     await expect(page.locator('.nav')).toBeHidden();
-    await expect(page.locator('#share span')).toBeHidden();
+    await expect(page.locator('#open-designs span')).toBeHidden();
     expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollbarWidth)).toBe('none');
     // the canvas takes drags (rotate), the options column scrolls the page
     expect(await page.evaluate(() => getComputedStyle(document.querySelector('#stage canvas')!).touchAction)).toBe('none');

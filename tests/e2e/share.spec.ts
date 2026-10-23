@@ -22,7 +22,8 @@ test.describe('share, my designs, undo and redo', () => {
     await boot(page);
     await page.locator('#step-next').click();
     await page.locator('#card-cap .tile', { hasText: 'Cloud' }).click();
-    await page.locator('#share').click();
+    await expect(page.locator('#share')).toBeHidden(); // hidden in the header for now (2026-10-23); the link code stays
+    await page.locator('#share').dispatchEvent('click');
     await expect(page.locator('#toast')).toContainText('Link copied');
     const url = await page.evaluate(() => navigator.clipboard.readText());
     expect(new URL(url).hash).toMatch(/^#d=/);
@@ -41,7 +42,7 @@ test.describe('share, my designs, undo and redo', () => {
     await boot(page);
     await page.locator('#step-next').click();
     await page.locator('#card-cap .tile', { hasText: 'Cloud' }).click();
-    await page.locator('#share').click();
+    await page.locator('#share').dispatchEvent('click');
     await expect(page.locator('#toast')).toContainText('Link copied');
     const url = await page.evaluate(() => navigator.clipboard.readText());
     await page.goto('about:blank'); // a hash-only goto from the same page would not reload it
@@ -63,7 +64,7 @@ test.describe('share, my designs, undo and redo', () => {
     await boot(page);
     await page.locator('#step-next').click();
     await page.locator('#card-cap .tile', { hasText: 'Cloud' }).click();
-    await page.locator('#share').click();
+    await page.locator('#share').dispatchEvent('click');
     await expect(page.locator('#toast')).toContainText('Link copied');
     const url = await page.evaluate(() => navigator.clipboard.readText());
     const ctx2 = await browser.newContext({ viewport: { width: 1280, height: 900 }, baseURL: 'http://localhost:3240' });
