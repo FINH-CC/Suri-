@@ -42,4 +42,4 @@
 .pp-f.name b{font-size:15px}
 .pp-sig{font-style:italic;font-size:15px;font-weight:300;color:#3c3a8a;border-bottom:1px solid rgba(43,42,51,.25);padding-bottom:1px;text-transform:none!important;letter-spacing:0!important}
 .pp-ghost{position:absolute;right:-4px;bottom:-6px;width:44px;opacity:.16;filter:grayscale(1);pointer-events:none}
-.pp-mrz{margin-top:auto;background:rgba(255,255,255,.72);padding:7px 16px 8px;font-family:"OCR B","OCR-B",ui-monospace,Menlo,Consolas,monospace;font-size:9px;font-size:calc((100cqw - 32px) / 44 / .66);line-height:1.4;letter-spacing:.04em;color:#2b2a33;white-space:pre;overflow:hidden}
+.pp-mrz{margin-top:auto;background:rgba(255,255,255,.72);padding:7px 16px 8px;font-family:"OCR B","OCR-B",ui-monospace,Menlo,Consolas,monospace;font-size:7px;font-size:min(7px,calc((100cqw - 32px) / 44 / .66));line-height:1.45;letter-spacing:.06em;color:#2b2a33;white-space:pre;overflow:hidden}
