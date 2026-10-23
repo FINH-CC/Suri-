@@ -9,7 +9,10 @@ const el = () => document.getElementById('intro');
 const original = el()?.querySelector('.intro-inner')?.innerHTML ?? '';
 let finishing = false;
 
-/** Keep the hopping wordmark on screen for at least 1.5 s, give it one big jump, then slide the intro away and remove it. */
+/**
+ * Keep the hopping wordmark on screen for at least 1.5 s, give it one big jump, and slide the intro away while the
+ * jump lands (0.6 s jump, slide from 0.4 s, 0.75 s long: ~1.2 s from ready to gone, so the brush is not kept waiting).
+ */
 export function finish(): void {
   const intro = el();
   if (!intro || finishing) return;
@@ -21,8 +24,8 @@ export function finish(): void {
     setTimeout(() => {
       intro.classList.add('out');
       document.documentElement.classList.remove('intro-on');
-      setTimeout(() => intro.remove(), 1000);
-    }, rm ? 200 : 950);
+      setTimeout(() => intro.remove(), 800);
+    }, rm ? 200 : 400);
   }, rm ? 0 : wait);
 }
 
